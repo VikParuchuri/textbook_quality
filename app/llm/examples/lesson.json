@@ -1,0 +1,48 @@
+[
+  {
+    "Table of contents\n": "1. Checking for Membership in Python Dictionaries",
+    "research notes\n": "* ```\nThe dictionary is a commonly used data structure that is an unordered collection of items.\n○ Each item consists of key-value pairs\n○ It is ordered collection of references - Each value is\nreferenced though key in the pair\n```\n* ```\nin tests for the existence of a key in a dictionary:\n\nd = {'key1': 10, 'key2': 23}\n\nif 'key1' in d:\n    print('this will execute')\n```",
+    "course\n\n": "---section\n\n1. Checking for Membership in Python Dictionaries",
+    "markdown": [
+      [
+        "text",
+        "\nPython dictionaries are a commonly used data structure.  They make many tasks easier, including counting how many times a value occurs in a list.  For example, let's say we want to find out how many apps in the app store have different age ratings.  Age ratings tell us which ages an app is appropriate for.\nWe'll do the full counting procedure later, but we'll start with a simpler version.  We can create a dictionary that has the age ratings as keys, and the app counts as values.\n\n```python\ncontent_ratings = {'4+': 4433, '9+': 987, '12+': 1155, '17+': 622}\n```\n\nAs you can see, our dictionary has `4` keys, and $4433 + 987 + 1155 + 622 = 7197$ values.\n\n"
+      ],
+      [
+        "text",
+        "\nOnce we've created a dictionary, we can check if a value exists in the dictionary as a key. We can check if the value `'12+'` exists as a key in the dictionary using the `in` operator.\n\n```python\nprint('12+' in content_ratings)\n```\nThe `'12+' in content_ratings` expression returned the Boolean `True`. This is because the string `'12+'` exists in the dictionary `content_ratings` as a key.  If we use `in` with a value that doesn't exist among a dictionary's keys, we'll get `False`. \n\n"
+      ],
+      [
+        "example",
+        "\n- Checking if the string `'10+'` exists in `content_ratings` returns `False`.\n- Checking if the string `'9+'` exists in `content_ratings` returns `True`.  This is because `10+` does not exist in the dictionary, but `9+` does.\n\n"
+      ],
+      [
+        "exercise",
+        "\nInstructions\n\nUsing the in operator, check whether the following values exist as dictionary keys in the content_ratings dictionary from earlier:\n- The string '9+'\n- The integer `987`\n\nAnswer\n\n```python\nis_in_1 = '9+' in content_ratings\nis_in_2 = 987 in content_ratings\n```\n\n"
+      ]
+    ]
+  },
+  {
+    "Table of contents\n": "1. The Lost Colony of Roanoke",
+    "research notes\n": "* ```\nRoanoke was founded by governor Ralph Lane in 1585. Lane's colony was troubled by a lack of supplies and poor relations with the local Native Americans. While awaiting a resupply mission by Sir Richard Grenville, Lane abandoned the colony and returned to England in 1586.\n```\n* ```\nFollowing the failure of the 1585 settlement, a second expedition landed on the same island in 1587. That attempt became known as the Lost Colony due to the unexplained disappearance of its population.\n```",
+    "course\n\n": "---section\n\n1. The Roanoke colony",
+    "markdown": [
+      [
+        "text",
+        "\nSpain began to colonize South America and the Caribbean following the first voyage of Christopher Columbus in 1492. Not wanting to be left behind, the English sent explorers to North America. One example was John Cabot, who made landfall around Newfoundland in 1497.\nThe first British colony was established by Walter Raleigh at Roanoke Island, Virginia, in 1585. About 600 male colonists were sent, but due to a lack of provisions, only 108 stayed.\nLike most early English colonists, they were unprepared for survival in the New World. They relied on Native Americans from the Secotan tribe for supplies.\n\n"
+      ],
+      [
+        "example",
+        "\nNative American tribes in the area initially gave or traded corn, venison, oysters, and other food to the colonists.\nWithout this, the colonists would have starved.\nLater, the Secotan relocated to Roanoke island to trade with and keep an eye on the English settlers.\nThe Secotan sowed crops and built fishing weirs for the English settlers.\n\n"
+      ],
+      [
+        "text",
+        "\nMany diseases, such as smallpox, were unknown in the New World, and contact between the British settlers and Native Americans caused epidemics in native villages.\nThe English reliance on the Secotan for food caused tension between the two groups. This was exacerbated by the actions of the English - including kidnapping tribe members and burning a village.\nThe English were eventually forced to evacuate the Roanoke colony and return to England.\n\nRaleigh made a second attempt in 1587 with 115 colonists, including two Native Americans who went back to England with the original expedition - Manteo and Towaye. Manteo smoothed over relations with Native American tribes in the area.\nAn English expedition did not return to Roanoke until 1590. They found that the village was abandoned, and the the word 'CROATOAN' was carved on a tree.\nThe expedition did not find the colonists, but assumed that they had relocated to Croatoan Island.\nRaleigh only mounted token efforts to find the colonists, because their fate being undecided meant that he could still claim the Virginia colony.\nOther efforts were made to find the colonists, but their fate has never been discovered.\n\n"
+      ],
+      [
+        "exercise",
+        "\nInstructions\n\nWhy do you think the colonists needed help from Native Americans?.\n\nAnswer\n\nSettlers might have needed to get help from native tribes because they were facing starvation and disease. Coming from settled Europe, they lacked key survival skills, and resupply over the ocean was inconsistent and expensive.\n\n"
+      ]
+    ]
+  }
+]

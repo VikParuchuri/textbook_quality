@@ -1,0 +1,11 @@
+{% extends "template.jinja" %}
+
+{%block content %}
+Here is the title of a book: {{title}}
+
+Based on this title, what are up to 5 concepts you think someone would learn from this book?  Concepts should be 2-10 words long.  Some examples of concepts are  "programming with numpy and python", "the battles of the american civil war", and "types of molecular bonds".
+
+Make the concepts specific.  For example, "battles of the american civil war in the eastern theater" is more specific than "civil war history".
+
+Return the result as a flat JSON list.  Only respond with a flat JSON list.
+{% endblock %}

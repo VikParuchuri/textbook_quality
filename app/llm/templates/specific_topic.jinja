@@ -1,0 +1,9 @@
+{% extends "template.jinja" %}
+
+{%block content %}
+Here is the title of a course: {{title}}
+
+Make this title more specific.  Include one specific tool, technology, or concept that is not mentioned in the title.  {%if domain %}Make sure the tool, technology, or concept is related to {{domain}}.  {%endif%}Include up to 3 variations.
+
+Return the result as a flat JSON list.  Only respond with a flat JSON list.
+{% endblock %}

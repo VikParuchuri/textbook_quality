@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "textbook_quality"
+version = "0.1.0"
+description = ""
+authors = ["Vik Paruchuri <vik.paruchuri@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sqlmodel = "^0.0.8"
+alembic = "^1.12.0"
+Jinja2 = "^3.1.2"
+psycopg2 = "^2.9.7"
+openai = "^0.28.0"
+python-dotenv = "^1.0.0"
+PyMuPDF = "^1.23.3"
+tiktoken = "^0.5.1"
+asyncpg = "^0.28.0"
+greenlet = "^2.0.2"
+markdown = "^3.4.4"
+stopit = "^1.1.2"
+pymdown-extensions = "^10.3"
+sentence-transformers = "^2.2.2"
+datasets = "^2.14.5"
+pyyaml = "^6.0.1"
+ftfy = "^6.1.1"
+
+[tool.poetry.group.dev.dependencies]
+invoke = "^2.2.0"
+jupyterlab = "^4.0.6"
+black = "^23.9.1"
+pylint = "^2.17.5"
+jupyter = "^1.0.0"
+pyperclip = "^1.8.2"
+autoflake = "^2.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,12 @@
+{% extends "template.jinja" %}
+
+{%block content %}
+Think step by step and creatively to develop a {{item_count}} item outline for a detailed textbook on {{topic}}.  Each item in the outline should be a single line.  Ensure that the outline progresses logically, with later items building on earlier ones.  Each item in the outline should be concise and to the point.
+{% if concepts|length > 0 %}
+
+Include the following concepts as appropriate: {{concepts|join(', ')}}.  You may also need to include elements in the outline beyond these concepts to cover the topic.{% endif %}
+
+Also return up to two Google Search queries that you can run to get additional resources on the topic while writing the textbook.  The queries should pertain to the topic of the textbook and the outline.  The queries will help you get information about topics you're not as familiar with, but the topics should not be so specific that no results can be found for them.
+
+Return the outline and queries in JSON format.  Do not include more than {{item_count}} items in the outline, and do not include more than 2 items in the queries.  Only respond with valid JSON.
+{% endblock %}

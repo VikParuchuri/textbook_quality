@@ -1,0 +1,6 @@
+[
+  {
+    "topic": "Scientific computing with Python",
+    "json": ["Numpy for scientific computing in python", "Using scipy for scientific computing", "Parallel scientific computing with dask and multiprocessing"]
+  }
+]

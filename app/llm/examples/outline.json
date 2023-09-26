@@ -1,0 +1,53 @@
+[
+  {
+    "topic": "introduction to python programming",
+    "concepts": [
+      "Data structures",
+      "Assignment and comparison",
+      "Functions",
+      "Control flow"
+    ],
+    "json": {
+      "outline": [
+        "Setting up your development environment",
+        "Variables and operators in Python",
+        "Conditional statements: if, else, elif",
+        "Working with lists, tuples, and dictionaries",
+        "For and while loops",
+        "Writing and calling functions",
+        "Exception handling and debugging",
+        "Object-oriented programming in Python"
+      ],
+      "queries": [
+        "Python programming beginner guide",
+        "Python programming introduction book"
+      ]
+    }
+  },
+  {
+    "topic": "american history",
+    "concepts": [
+      "Colonial America",
+      "Civil War",
+      "Revolutionary War",
+      "Modern Era"
+    ],
+    "json": {
+      "outline": [
+        "The colonization of America and the early settlers",
+        "The Revolutionary War",
+        "The formation of the United States government",
+        "Tension between North and South",
+        "The major battles and events of the Civil War",
+        "The post-Civil War Reconstruction era",
+        "The rise of the US as a global power",
+        "Soviet Union and the Cold War",
+        "The US in the modern era"
+      ],
+      "queries": [
+        "American history book",
+        "American civil war history"
+      ]
+    }
+  }
+]
