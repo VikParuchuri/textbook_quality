@@ -59,6 +59,17 @@ async def generate_lesson(
 
         current_section = f"{last_section}\n\n{current_section_header}".strip()
 
+        # Filter research notes to save tokens, only keep notes relevant to the next 3 sections
+        # Find the indices of the next sections
+        future_sections = set(list(range(generated_sections, len(numbered_outline)))[:3])
+        selected_research_notes = None
+        if research_notes is not None:
+            selected_research_notes = []
+            for research_note in research_notes:
+                # If the research note is needed in the next sections
+                if set(research_note.outline_items) & future_sections:
+                    selected_research_notes.append(research_note)
+
         try:
             response = generate_single_lesson_chunk(
                 numbered_outline,
@@ -66,7 +77,7 @@ async def generate_lesson(
                 generated_sections,
                 course_name,
                 course_components,
-                research_notes=research_notes,
+                research_notes=selected_research_notes,
                 include_examples=settings.INCLUDE_EXAMPLES,
             )
             new_components = []

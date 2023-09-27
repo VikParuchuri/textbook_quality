@@ -55,6 +55,7 @@ async def generate_single_course(course_name, outline_items=12):
     context = None
     if queries is not None:
         try:
+            # Up to one retrieved passage per outline item
             context = await query_course_context(queries, outline)
         except Exception as e:
             debug_print_trace()

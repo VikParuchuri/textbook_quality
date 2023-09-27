@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -6,3 +8,4 @@ class ResearchNote(BaseModel):
     title: str
     link: str
     description: str
+    outline_items: List[int]

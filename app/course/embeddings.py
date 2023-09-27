@@ -16,14 +16,21 @@ def create_embeddings(passages, model) -> torch.Tensor:
 
 
 def run_query(
-    query_text: str | List[str], embeddings, model, result_count=2, score_thresh=0.6
+    query_text: str | List[str], embeddings, model, result_count=1, score_thresh=0.6
 ):
     query_embedding = model.encode(query_text, convert_to_tensor=True)
     cos_scores = util.cos_sim(query_embedding, embeddings)
     top_results = torch.topk(cos_scores, k=result_count, dim=-1)
+
+    # Indices of the passages most similar to the queries (outline items)
     flat_indices = torch.flatten(top_results.indices[top_results.values > score_thresh])
+    selected_row = torch.sum(top_results.values > score_thresh, dim=-1) > 0
     selected_indices = set(flat_indices.tolist())
-    return top_results, selected_indices
+
+    # Create a mapping, so we know which passages are used by which outline items
+    outline_items_selected = torch.arange(len(query_text))[selected_row].tolist()
+    item_mapping = {o: i.item() for o, i in zip(outline_items_selected, flat_indices)}
+    return top_results, selected_indices, item_mapping
 
 
 def dedup_list(topics, score_thresh=0.9):
@@ -56,7 +63,7 @@ class TopicEmbedding:
                 self.embeddings = torch.cat((self.embeddings, embeddings), dim=0)
 
     def query(self, query_text, result_count=1, score_thresh=0.9) -> List[str]:
-        scores, selected_indices = run_query(
+        scores, selected_indices, item_mapping = run_query(
             query_text, self.embeddings, model, result_count, score_thresh=score_thresh
         )
 
@@ -89,7 +96,7 @@ class EmbeddingContext:
             self.text_data.append(resource)
 
     def query(self, query_text, result_count=1, score_thresh=0.6) -> List[ResearchNote]:
-        scores, selected_indices = run_query(
+        scores, selected_indices, item_mapping = run_query(
             query_text, self.embeddings, model, result_count, score_thresh=score_thresh
         )
 
@@ -103,6 +110,7 @@ class EmbeddingContext:
                         title=text_data.title,
                         link=text_data.link,
                         description=text_data.description,
+                        outline_items=[k for k in item_mapping.keys() if item_mapping[k] == index]
                     )
                     results.append(result)
                     break

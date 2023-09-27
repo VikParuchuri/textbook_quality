@@ -13,10 +13,14 @@ def render_components_to_output_markdown(
         match component.type:
             case ComponentNames.exercise:
                 solution = component.solution.strip() if component.solution else ""
+                exercise = f"## Exercise\n{component.instructions.strip()}"
+                if len(solution) > 0:
+                    exercise += f"\n\n### Solution\n{solution}"
+
                 tuples.append(
                     (
                         component.type,
-                        f"## Exercise\n{component.instructions.strip()}\n\n### Solution\n{solution}",
+                        exercise,
                     )
                 )
             case ComponentNames.section:

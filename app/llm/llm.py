@@ -104,13 +104,10 @@ async def generate_response(
                     )
                 case "llama":
                     prompt_tokens = oai_tokenize_prompt(prompt)
-                    if (
-                        prompt_tokens + max_tokens
-                        >= settings.LLM_TYPES[model]["max_tokens"]
-                    ):
-                        max_tokens = (
-                            settings.LLM_TYPES[model]["max_tokens"] - prompt_tokens
-                        )
+
+                    allowed_tokens = settings.LLM_TYPES[model]["max_tokens"]
+                    if prompt_tokens + max_tokens > allowed_tokens:
+                        max_tokens = allowed_tokens - prompt_tokens
 
                     if max_tokens < 256:
                         raise InvalidRequestError(
