@@ -28,8 +28,11 @@ def run_query(
     selected_indices = set(flat_indices.tolist())
 
     # Create a mapping, so we know which passages are used by which outline items
-    outline_items_selected = torch.arange(len(query_text))[selected_row].tolist()
-    item_mapping = {o: i.item() for o, i in zip(outline_items_selected, flat_indices)}
+    if isinstance(query_text, list):
+        outline_items_selected = torch.arange(len(query_text))[selected_row].tolist()
+        item_mapping = {o: i.item() for o, i in zip(outline_items_selected, flat_indices)}
+    else:
+        item_mapping = None
     return top_results, selected_indices, item_mapping
 
 
