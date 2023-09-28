@@ -41,7 +41,7 @@ async def create_course_outline(
             queries = outline_data.queries
     except (GenerationError, RateLimitError, InvalidRequestError) as e:
         debug_print_trace()
-        print(f"Error generating outline for {course_name}: {e}")
+        print(f"Error generating outline for {course_name}")
 
     return outline_list, queries
 

@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     SEARCH_BACKEND: Optional[str] = "serply"
 
     # General
-    THREADS_PER_WORKER: int = 4 # How many threads to use per worker process to save RAM
+    THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
 
     class Config:
         env_file = find_dotenv("local.env")

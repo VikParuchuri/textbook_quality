@@ -19,6 +19,7 @@ def run_query(
     query_text: str | List[str], embeddings, model, result_count=1, score_thresh=0.6
 ):
     query_embedding = model.encode(query_text, convert_to_tensor=True)
+
     cos_scores = util.cos_sim(query_embedding, embeddings)
     top_results = torch.topk(cos_scores, k=result_count, dim=-1)
 
@@ -45,7 +46,10 @@ def dedup_list(topics, score_thresh=0.9):
         res = tc.query(topic, score_thresh=score_thresh)
         if len(res) == 0:
             clean_topics.append(topic)
-        tc.add_topics([topic])
+        try:
+            tc.add_topics([topic])
+        except KeyError:
+            pass
     return clean_topics
 
 
@@ -66,9 +70,13 @@ class TopicEmbedding:
                 self.embeddings = torch.cat((self.embeddings, embeddings), dim=0)
 
     def query(self, query_text, result_count=1, score_thresh=0.9) -> List[str]:
-        scores, selected_indices, item_mapping = run_query(
-            query_text, self.embeddings, model, result_count, score_thresh=score_thresh
-        )
+        try:
+            scores, selected_indices, item_mapping = run_query(
+                query_text, self.embeddings, model, result_count, score_thresh=score_thresh
+            )
+        except KeyError as e:
+            print(f"Error querying topic embedding: {e}")
+            return []
 
         results = []
         for index in selected_indices:

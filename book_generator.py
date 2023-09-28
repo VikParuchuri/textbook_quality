@@ -74,12 +74,16 @@ async def generate_single_course(course_name, outline_items=12):
     return course
 
 
-async def _process_courses(courses):
+async def process_course(topic):
     try:
-        return await asyncio.gather(*[generate_single_course(course) for course in courses], return_exceptions=True)
+        return await generate_single_course(topic)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
+
+
+async def _process_courses(courses):
+    return await asyncio.gather(*[process_course(course) for course in courses])
 
 
 def process_courses(courses):
@@ -130,8 +134,7 @@ if __name__ == "__main__":
                 "model": settings.LLM_TYPE,
                 "concepts": course.concepts,
                 "outline": course.outline,
-                "markdown": course.markdown,
-                "components": course.components
+                "markdown": course.markdown
             }
             f.write(json.dumps(json_data) + '\n')
 

@@ -24,6 +24,7 @@ sentence-transformers = "^2.2.2"
 datasets = "^2.14.5"
 pyyaml = "^6.0.1"
 ftfy = "^6.1.1"
+tenacity = "^8.2.3"
 
 [tool.poetry.group.dev.dependencies]
 invoke = "^2.2.0"
