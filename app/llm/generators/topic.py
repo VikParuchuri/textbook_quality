@@ -13,7 +13,7 @@ from app.util import extract_only_json_list
 topic_settings = GenerationSettings(
     temperature=0.9,
     max_tokens=512,
-    timeout=20,
+    timeout=40,
     stop_tokens=None,
     prompt_type="topic",
     model=settings.LLM_INSTRUCT_TYPE,

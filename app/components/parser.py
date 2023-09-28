@@ -20,7 +20,7 @@ def parse_single_component(component_type: str, markdown: str, key: str = None):
     }
     match component_type:
         case ComponentNames.exercise:
-            exercise_data = re.split(r"\nAnswer\n|\nAnswer:\n|\nAnswer: ", markdown)
+            exercise_data = re.split(r"\nAnswer\n|\nAnswer:\n|\nAnswer: |\nSolution: |\nSolution:\n|\nSolution\n", markdown)
             match len(exercise_data):
                 case 1:
                     instructions, answer = exercise_data[0], None

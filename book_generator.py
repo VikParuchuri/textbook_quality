@@ -1,4 +1,5 @@
 import asyncio
+import math
 import traceback
 from dataclasses import dataclass
 from typing import List, Dict, Optional
@@ -73,12 +74,16 @@ async def generate_single_course(course_name, outline_items=12):
     return course
 
 
-def process_course(course):
+async def _process_courses(courses):
     try:
-        return asyncio.run(generate_single_course(course))
+        return await asyncio.gather(*[generate_single_course(course) for course in courses], return_exceptions=True)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
+
+
+def process_courses(courses):
+    return asyncio.run(_process_courses(courses))
 
 
 def load_topics(in_file: str, max_topics: Optional[str]):
@@ -104,20 +109,29 @@ if __name__ == "__main__":
 
     topics = load_topics(args.in_file, max_topics=args.max)
 
-    courses = process_map(process_course, topics, max_workers=args.workers, chunksize=1)
+    total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+
+    # group topics into batches of settings.THREADS_PER_WORKER
+    batched_topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in range(0, len(topics), settings.THREADS_PER_WORKER)]
+
+    courses = process_map(process_courses, batched_topics, max_workers=total_processes, chunksize=1)
+
+    # Flatten courses list
+    courses = [course for batch in courses for course in batch]
 
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
         for course, topic in zip(courses, topics):
 
             # Filter out courses that didn't generate properly
-            if course is None or course.markdown is None or len(course.markdown) == 0:
+            if course is None or isinstance(course, Exception) or course.markdown is None or len(course.markdown) == 0:
                 continue
             json_data = {
                 "topic": topic,
                 "model": settings.LLM_TYPE,
                 "concepts": course.concepts,
                 "outline": course.outline,
-                "markdown": course.markdown
+                "markdown": course.markdown,
+                "components": course.components
             }
             f.write(json.dumps(json_data) + '\n')
 
