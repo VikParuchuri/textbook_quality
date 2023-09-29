@@ -10,7 +10,7 @@ The core is extensible, so you can add your own adaptors to connect to new APIs 
 
 ## Prerequisites
 
-- Python 3.8+ (ideally 3.11)
+- Python 3.9+ (ideally 3.11)
 - You will need postgres installed. You can install it with `brew install postgres` on a Mac.
 
 ## Setup

@@ -54,7 +54,7 @@ def after_retry_callback(retry_state):
     retry=retry_if_exception_type(GenerationError),
     stop=stop_after_attempt(2),
     wait=wait_fixed(2),
-    before=before_retry_callback,
+    before_sleep=before_retry_callback,
     after=after_retry_callback,
     reraise=True,
 )

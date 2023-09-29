@@ -9,6 +9,7 @@ from aiohttp import ClientPayloadError
 from fitz import FileDataError
 from pydantic import BaseModel
 
+from app.db.session import get_session
 from app.services.adaptors.serpapi import serpapi_pdf_search_settings
 from app.services.adaptors.serply import serply_pdf_search_settings
 from app.services.dependencies import get_stored_url
@@ -43,7 +44,12 @@ class PDFSearchResult(BaseModel):
 
 async def search_pdfs(queries: List[str], max_count=5) -> List[PDFSearchResult]:
     coroutines = [search_pdf(query, max_count) for query in queries]
-    results = await asyncio.gather(*coroutines)
+
+    # Run sequentially to save DB connections
+    results = []
+    for task in coroutines:
+        results.append(await task)
+
     results = list(chain.from_iterable(results))
 
     # Filter results to only unique links
@@ -98,25 +104,37 @@ async def search_pdf(query: str, max_count) -> List[PDFSearchResult]:
 async def download_and_parse_pdfs(
     search_results: List[PDFSearchResult],
 ) -> List[PDFData]:
+    # Query if PDFs have already been downloaded and stored
+    pdf_paths = []
+    async with get_session() as db:
+        for search_result in search_results:
+            pdf_paths.append(await get_stored_url(db, search_result.link))
+
     coroutines = [
-        download_and_parse_pdf(search_result) for search_result in search_results
+        download_and_parse_pdf(search_result, pdf_path) for search_result, pdf_path in zip(search_results, pdf_paths)
     ]
     results = await asyncio.gather(*coroutines)
     results = [result for result in results if result]
+
+    # Store all scraping results
+    async with get_session() as db:
+        for result in results:
+            if not result.stored:
+                store_scraped_data(db, result.link, result.pdf_path)
+        await db.commit()
     return results
 
 
-async def download_and_parse_pdf(search_result: PDFSearchResult) -> Optional[PDFData]:
-    pdf_path = await get_stored_url(search_result.link)
-
+async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optional[str]) -> Optional[PDFData]:
+    stored = False
     if pdf_path:
         with open(os.path.join(settings.PDF_CACHE_DIR, pdf_path), "rb") as f:
             pdf_data = f.read()
+        stored = True
     else:
         try:
             # Download pdf, save to filesystem
             pdf_path, pdf_data = await download_and_save(search_result.link)
-            await store_scraped_data(search_result.link, pdf_path)
         except ProcessingError as e:
             # This happens when pdf is too large
             return
@@ -137,6 +155,7 @@ async def download_and_parse_pdf(search_result: PDFSearchResult) -> Optional[PDF
         description=search_result.description,
         content=pdf_content,
         query=search_result.query,
+        stored=stored,
     )
 
     # Bail out if we don't have enough text or blocks in our pdf

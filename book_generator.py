@@ -1,11 +1,7 @@
 import asyncio
 import math
-import traceback
-from dataclasses import dataclass
-from typing import List, Dict, Optional
+from typing import Optional
 import argparse
-
-from pydantic import BaseModel
 
 from app.db.session import get_session
 from app.db.tables import * # Needed to avoid errors with table imports
@@ -19,7 +15,7 @@ import json
 import os
 import random
 
-from app.util import debug_print_trace
+from app.util import debug_print_trace, exact_deduplicate
 
 
 async def query_course(topic: str, model: str):
@@ -38,6 +34,7 @@ async def generate_single_course(course_name, outline_items=12):
 
     course = await query_course(course_name, settings.LLM_TYPE)
     if course is not None:
+        await asyncio.sleep(.01) # Sleep to avoid high CPU usage with many workers
         return course
 
     topic, concepts = await create_course_concepts(course_name)
@@ -112,6 +109,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     topics = load_topics(args.in_file, max_topics=args.max)
+
+    # Everything is cached, so exact duplicates will result in the same output
+    topics = exact_deduplicate(topics)
 
     total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
 

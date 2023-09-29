@@ -35,3 +35,13 @@ def fix_unicode_text(text: str) -> str:
 def debug_print_trace():
     if settings.DEBUG:
         print(traceback.format_exc())
+
+
+def exact_deduplicate(strings):
+    seen = set()
+    result = []
+    for string in strings:
+        if string not in seen:
+            seen.add(string)
+            result.append(string)
+    return result

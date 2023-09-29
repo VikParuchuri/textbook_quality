@@ -33,7 +33,7 @@ async def run_search(query: str, endpoint: str, query_params: str = ""):
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.get(request_url) as response:
                 json = await response.json()
-    except aiohttp.ClientResponseError as e:
+    except (aiohttp.ClientResponseError, aiohttp.ClientOSError) as e:
         raise RequestError(f"Request failed with status {e.status}")
     except JSONDecodeError as e:
         raise ResponseError(f"Could not decode response as JSON: {e}")
