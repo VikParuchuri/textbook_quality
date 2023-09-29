@@ -5,6 +5,8 @@ from json import JSONDecodeError
 from typing import List
 
 from pydantic import BaseModel
+from tenacity import stop_after_attempt, wait_fixed, before, after, retry, retry_if_exception_type
+import threading
 
 from app.llm.exceptions import GenerationError
 from app.llm.llm import GenerationSettings, generate_response
@@ -22,7 +24,7 @@ class CourseGeneratedConcepts(BaseModel):
 concept_settings = GenerationSettings(
     temperature=0.7,
     max_tokens=256,
-    timeout=20,
+    timeout=40,
     stop_tokens=None,
     prompt_type="concept",
     model=settings.LLM_INSTRUCT_TYPE,
@@ -37,10 +39,31 @@ def concept_prompt(topic: str) -> str:
     return prompt
 
 
+local_data = threading.local()
+
+
+def before_retry_callback(retry_state):
+    local_data.is_retry = True
+
+
+def after_retry_callback(retry_state):
+    local_data.is_retry = False
+
+
+@retry(
+    retry=retry_if_exception_type(GenerationError),
+    stop=stop_after_attempt(2),
+    wait=wait_fixed(2),
+    before_sleep=before_retry_callback,
+    after=after_retry_callback,
+    reraise=True,
+)
 async def generate_concepts(topic: str) -> CourseGeneratedConcepts:
     prompt = concept_prompt(topic)
     text = ""
-    response = generate_response(prompt, concept_settings)
+    # If we should cache the prompt - skip cache if we're retrying
+    should_cache = not getattr(local_data, "is_retry", False)
+    response = generate_response(prompt, concept_settings, cache=should_cache)
     async for chunk in response:
         text += chunk
     try:

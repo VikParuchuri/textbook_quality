@@ -1,5 +1,6 @@
 from pydantic import validator
-from sqlmodel import JSON, Column, Field, UniqueConstraint
+from sqlmodel import JSON, Column, Field, UniqueConstraint, Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.db.base_model import BaseDBModel
 from app.db.session import get_session
@@ -24,8 +25,6 @@ class ScrapedData(BaseDBModel, table=True):
     extra: dict | None = Field(sa_column=Column(JSON), default=dict(), nullable=True)
 
 
-async def store_scraped_data(source: str, uploaded: str):
-    async with get_session() as db:
-        data = ScrapedData(source=source, uploaded=uploaded)
-        db.add(data)
-        await db.commit()
+def store_scraped_data(db: AsyncSession, source: str, uploaded: str):
+    data = ScrapedData(source=source, uploaded=uploaded)
+    db.add(data)

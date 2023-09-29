@@ -1,10 +1,7 @@
 import asyncio
-import traceback
-from dataclasses import dataclass
-from typing import List, Dict, Optional
+import math
+from typing import Optional
 import argparse
-
-from pydantic import BaseModel
 
 from app.db.session import get_session
 from app.db.tables import * # Needed to avoid errors with table imports
@@ -18,7 +15,7 @@ import json
 import os
 import random
 
-from app.util import debug_print_trace
+from app.util import debug_print_trace, exact_deduplicate
 
 
 async def query_course(topic: str, model: str):
@@ -37,6 +34,7 @@ async def generate_single_course(course_name, outline_items=12):
 
     course = await query_course(course_name, settings.LLM_TYPE)
     if course is not None:
+        await asyncio.sleep(.01) # Sleep to avoid high CPU usage with many workers
         return course
 
     topic, concepts = await create_course_concepts(course_name)
@@ -73,12 +71,20 @@ async def generate_single_course(course_name, outline_items=12):
     return course
 
 
-def process_course(course):
+async def process_course(topic):
     try:
-        return asyncio.run(generate_single_course(course))
+        return await generate_single_course(topic)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
+
+
+async def _process_courses(courses):
+    return await asyncio.gather(*[process_course(course) for course in courses])
+
+
+def process_courses(courses):
+    return asyncio.run(_process_courses(courses))
 
 
 def load_topics(in_file: str, max_topics: Optional[str]):
@@ -104,13 +110,24 @@ if __name__ == "__main__":
 
     topics = load_topics(args.in_file, max_topics=args.max)
 
-    courses = process_map(process_course, topics, max_workers=args.workers, chunksize=1)
+    # Everything is cached, so exact duplicates will result in the same output
+    topics = exact_deduplicate(topics)
+
+    total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+
+    # group topics into batches of settings.THREADS_PER_WORKER
+    batched_topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in range(0, len(topics), settings.THREADS_PER_WORKER)]
+
+    courses = process_map(process_courses, batched_topics, max_workers=total_processes, chunksize=1)
+
+    # Flatten courses list
+    courses = [course for batch in courses for course in batch]
 
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
         for course, topic in zip(courses, topics):
 
             # Filter out courses that didn't generate properly
-            if course is None or course.markdown is None or len(course.markdown) == 0:
+            if course is None or isinstance(course, Exception) or course.markdown is None or len(course.markdown) == 0:
                 continue
             json_data = {
                 "topic": topic,

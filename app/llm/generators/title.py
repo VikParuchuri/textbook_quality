@@ -11,7 +11,10 @@ from app.settings import settings
 from app.util import extract_only_json_list
 
 title_settings = GenerationSettings(
-    temperature=0.9, max_tokens=512, timeout=20, prompt_type="title"
+    temperature=0.9,
+    max_tokens=512,
+    timeout=40,
+    prompt_type="title"
 )
 
 

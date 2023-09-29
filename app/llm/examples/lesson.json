@@ -18,7 +18,7 @@
       ],
       [
         "exercise",
-        "\nInstructions\n\nUsing the in operator, check whether the following values exist as dictionary keys in the content_ratings dictionary from earlier:\n- The string '9+'\n- The integer `987`\n\nAnswer\n\n```python\nis_in_1 = '9+' in content_ratings\nis_in_2 = 987 in content_ratings\n```\n\n"
+        "\nInstructions:\n\nUsing the in operator, check whether the following values exist as dictionary keys in the content_ratings dictionary from earlier:\n- The string '9+'\n- The integer `987`\n\nSolution:\n\n```python\nis_in_1 = '9+' in content_ratings\nis_in_2 = 987 in content_ratings\n```\n\n"
       ]
     ]
   },
@@ -41,7 +41,7 @@
       ],
       [
         "exercise",
-        "\nInstructions\n\nWhy do you think the colonists needed help from Native Americans?.\n\nAnswer\n\nSettlers might have needed to get help from native tribes because they were facing starvation and disease. Coming from settled Europe, they lacked key survival skills, and resupply over the ocean was inconsistent and expensive.\n\n"
+        "\nInstructions:\n\nWhy do you think the colonists needed help from Native Americans?.\n\nSolution:\n\nSettlers might have needed to get help from native tribes because they were facing starvation and disease. Coming from settled Europe, they lacked key survival skills, and resupply over the ocean was inconsistent and expensive.\n\n"
       ]
     ]
   }

@@ -28,3 +28,4 @@ class PDFData(BaseModel):
     description: str
     content: List[str]
     query: str | None = None
+    stored: bool = False

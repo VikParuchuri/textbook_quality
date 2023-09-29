@@ -61,7 +61,7 @@ def render_components_to_markdown(components: List[AllLessonComponentData]) -> s
                 tuples.append(
                     (
                         component.type,
-                        f"Instructions\n\n{component.instructions}\n\nAnswer\n\n{component.solution}",
+                        f"Instructions:\n\n{component.instructions}\n\nSolution:\n\n{component.solution}",
                     )
                 )
             case _:

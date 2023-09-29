@@ -2,11 +2,11 @@ import os
 from typing import List
 
 import torch
-from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import util, SentenceTransformer
 
 from app.course.schemas import ResearchNote
 
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+EMBEDDING_DIM = 384
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -19,6 +19,7 @@ def run_query(
     query_text: str | List[str], embeddings, model, result_count=1, score_thresh=0.6
 ):
     query_embedding = model.encode(query_text, convert_to_tensor=True)
+
     cos_scores = util.cos_sim(query_embedding, embeddings)
     top_results = torch.topk(cos_scores, k=result_count, dim=-1)
 
@@ -45,7 +46,10 @@ def dedup_list(topics, score_thresh=0.9):
         res = tc.query(topic, score_thresh=score_thresh)
         if len(res) == 0:
             clean_topics.append(topic)
-        tc.add_topics([topic])
+        try:
+            tc.add_topics([topic])
+        except KeyError:
+            pass
     return clean_topics
 
 
@@ -53,22 +57,31 @@ class TopicEmbedding:
     def __init__(self):
         self.embeddings = None
         self.topics = []
+        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     def add_topics(self, topics):
         for topic in topics:
             self.topics.append(topic)
-            embeddings = create_embeddings(topic, model)
+            embeddings = create_embeddings(topic, self.model)
 
             embeddings = embeddings.reshape(1, -1)
+            if embeddings.shape[1] != EMBEDDING_DIM:
+                print(f"Error embedding topic: {topic}")
+                continue
+
             if self.embeddings is None:
                 self.embeddings = embeddings
             else:
                 self.embeddings = torch.cat((self.embeddings, embeddings), dim=0)
 
     def query(self, query_text, result_count=1, score_thresh=0.9) -> List[str]:
-        scores, selected_indices, item_mapping = run_query(
-            query_text, self.embeddings, model, result_count, score_thresh=score_thresh
-        )
+        try:
+            scores, selected_indices, item_mapping = run_query(
+                query_text, self.embeddings, self.model, result_count, score_thresh=score_thresh
+            )
+        except KeyError as e:
+            print(f"Error querying topic embedding: {e}")
+            return []
 
         results = []
         for index in selected_indices:
@@ -83,13 +96,19 @@ class EmbeddingContext:
         self.content = []
         self.lengths = []
         self.text_data = []
+        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
     def add_resources(self, resources):
         for resource in resources:
             self.content += resource.content
             self.lengths.append(len(self.content))
 
-            embeddings = create_embeddings(resource.content, model)
+            embeddings = create_embeddings(resource.content, self.model)
+
+            embeddings = embeddings.reshape(len(resource.content), -1)
+            if embeddings.shape[1] != EMBEDDING_DIM:
+                print(f"Error embedding resource")
+                continue
 
             if self.embeddings is None:
                 self.embeddings = embeddings
@@ -100,7 +119,7 @@ class EmbeddingContext:
 
     def query(self, query_text, result_count=1, score_thresh=0.6) -> List[ResearchNote]:
         scores, selected_indices, item_mapping = run_query(
-            query_text, self.embeddings, model, result_count, score_thresh=score_thresh
+            query_text, self.embeddings, self.model, result_count, score_thresh=score_thresh
         )
 
         results = []
