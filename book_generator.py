@@ -4,6 +4,7 @@ from typing import Optional
 import argparse
 
 from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
 
 from app.db.session import get_session
 from app.db.tables import * # Needed to avoid errors with table imports
@@ -69,7 +70,16 @@ async def generate_single_course(model, course_name, outline_items=12):
     flat_context = None if context is None else [item.json() for item in context]
     course = Course(topic=topic, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=flat_context)
     await save_course(course)
-    return course
+
+    json_data = {
+        "topic": topic,
+        "model": settings.LLM_TYPE,
+        "concepts": course.concepts,
+        "outline": course.outline,
+        "markdown": course.markdown,
+        "components": course.components
+    }
+    return json.dumps(json_data)
 
 
 async def _process_course(model, topic):
@@ -114,6 +124,12 @@ def load_topics(in_file: str, max_topics: Optional[str]):
     return topics
 
 
+def to_iterator(obj_ids):
+    while obj_ids:
+        done, obj_ids = ray.wait(obj_ids)
+        yield ray.get(done[0])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Given a topic file, generate synthetic books.")
     parser.add_argument("in_file", help="Input filename (flat json list)")
@@ -137,34 +153,35 @@ if __name__ == "__main__":
         total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
         func = process_courses
 
-    ray.init(num_cpus=total_processes)
+    ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH)
 
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     model_ref = ray.put(model)
 
     print(f"Generating {len(topics)} course batches with {total_processes} processes")
-    futures = [func.remote(model, batch) for batch in topics]
+    futures = [func.remote(model_ref, batch) for batch in topics]
 
-    courses = ray.get(futures)
+    courses = []
+    for x in tqdm(to_iterator(futures), total=len(futures)):
+        courses.append(x)
 
     if settings.THREADS_PER_WORKER > 1:
         # Flatten courses list
         courses = [course for batch in courses for course in batch]
 
+
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
         for course, topic in zip(courses, topics):
-
             # Filter out courses that didn't generate properly
-            if course is None or isinstance(course, Exception) or course.markdown is None or len(course.markdown) == 0:
+            if course is None or isinstance(course, Exception):
                 continue
-            json_data = {
-                "topic": topic,
-                "model": settings.LLM_TYPE,
-                "concepts": course.concepts,
-                "outline": course.outline,
-                "markdown": course.markdown
-            }
-            f.write(json.dumps(json_data) + '\n')
+
+            course = json.loads(course)
+
+            if course.markdown is None or len(course.markdown) == 0:
+                continue
+
+            f.write(json.dumps(course) + '\n')
 
     ray.shutdown()
 

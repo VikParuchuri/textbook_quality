@@ -103,7 +103,12 @@ async def generate_response(
                         stop_tokens,
                         model=model,
                     )
-                case "llama":
+                case _:
+                    if model not in settings.LLM_TYPES:
+                        raise NotImplementedError(
+                            "This LLM type is not supported currently."
+                        )
+
                     prompt_tokens = oai_tokenize_prompt(prompt)
 
                     allowed_tokens = settings.LLM_TYPES[model]["max_tokens"]
@@ -122,10 +127,6 @@ async def generate_response(
                         max_tokens,
                         stop_tokens,
                         model=model,
-                    )
-                case _:
-                    raise NotImplementedError(
-                        "This LLM type is not supported currently."
                     )
             break
         except (GenerationError, RateLimitError, InvalidRequestError):
