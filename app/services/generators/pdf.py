@@ -42,14 +42,9 @@ class PDFSearchResult(BaseModel):
     query: str
 
 
-async def search_pdfs(queries: List[str], max_count=5) -> List[PDFSearchResult]:
+async def search_pdfs(queries: List[str], max_count=3) -> List[PDFSearchResult]:
     coroutines = [search_pdf(query, max_count) for query in queries]
-
-    # Run sequentially to save DB connections
-    results = []
-    for task in coroutines:
-        results.append(await task)
-
+    results = await asyncio.gather(*coroutines)
     results = list(chain.from_iterable(results))
 
     # Filter results to only unique links
@@ -106,12 +101,21 @@ async def download_and_parse_pdfs(
 ) -> List[PDFData]:
     # Query if PDFs have already been downloaded and stored
     pdf_paths = []
+
+    # Deduplicate links
+    deduped_search_results = []
+    seen_links = set()
+    for search_result in search_results:
+        if search_result.link not in seen_links:
+            deduped_search_results.append(search_result)
+            seen_links.add(search_result.link)
+
     async with get_session() as db:
-        for search_result in search_results:
+        for search_result in deduped_search_results:
             pdf_paths.append(await get_stored_url(db, search_result.link))
 
     coroutines = [
-        download_and_parse_pdf(search_result, pdf_path) for search_result, pdf_path in zip(search_results, pdf_paths)
+        download_and_parse_pdf(search_result, pdf_path) for search_result, pdf_path in zip(deduped_search_results, pdf_paths)
     ]
     results = await asyncio.gather(*coroutines)
     results = [result for result in results if result]

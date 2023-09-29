@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import time
 from typing import AsyncGenerator, List, Optional
@@ -133,7 +134,7 @@ async def generate_response(
             if i == max_tries - 1:
                 raise
 
-            time.sleep(30 * (i + 1))
+            await asyncio.sleep(30 * (i + 1))
 
     full_text = ""
     async for chunk in response:

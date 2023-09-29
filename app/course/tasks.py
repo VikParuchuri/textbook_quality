@@ -47,7 +47,7 @@ async def create_course_outline(
 
 
 async def query_course_context(
-    queries: List[str], outline_items: List[str]
+    model, queries: List[str], outline_items: List[str]
 ) -> List[ResearchNote] | None:
     # Store the pdf data in the database
     pdf_results = await search_pdfs(queries)
@@ -57,7 +57,7 @@ async def query_course_context(
     if len(pdf_data) == 0:
         return
 
-    embedding_context = EmbeddingContext()
+    embedding_context = EmbeddingContext(model)
     embedding_context.add_resources(pdf_data)
 
     results = embedding_context.query(outline_items)

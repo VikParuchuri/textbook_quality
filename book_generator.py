@@ -3,20 +3,21 @@ import math
 from typing import Optional
 import argparse
 
+from sentence_transformers import SentenceTransformer
+
 from app.db.session import get_session
 from app.db.tables import * # Needed to avoid errors with table imports
 from app.course.tasks import create_course_concepts, create_course_outline, query_course_context
 from app.course.models import load_cached_course, Course
 from app.lesson.tasks import generate_lesson
 from app.lesson.output import render_components_to_output_markdown
-from tqdm.contrib.concurrent import process_map
 from app.settings import settings
 import json
 import os
 import random
+import ray
 
 from app.util import debug_print_trace, exact_deduplicate
-
 
 async def query_course(topic: str, model: str):
     lesson = await load_cached_course(model, topic)
@@ -29,7 +30,7 @@ async def save_course(course: Course):
         await db.commit()
 
 
-async def generate_single_course(course_name, outline_items=12):
+async def generate_single_course(model, course_name, outline_items=12):
     components = ["exercise", "example"]
 
     course = await query_course(course_name, settings.LLM_TYPE)
@@ -54,7 +55,7 @@ async def generate_single_course(course_name, outline_items=12):
     if queries is not None:
         try:
             # Up to one retrieved passage per outline item
-            context = await query_course_context(queries, outline)
+            context = await query_course_context(model, queries, outline)
         except Exception as e:
             debug_print_trace()
             print(f"Error generating context for {course_name}: {e}")
@@ -71,20 +72,33 @@ async def generate_single_course(course_name, outline_items=12):
     return course
 
 
-async def process_course(topic):
+async def _process_course(model, topic):
     try:
-        return await generate_single_course(topic)
+        return await generate_single_course(model, topic)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
 
 
-async def _process_courses(courses):
-    return await asyncio.gather(*[process_course(course) for course in courses])
+async def _process_courses(model, courses):
+    processes = [_process_course(model, course) for course in courses]
+    return await asyncio.gather(*processes)
 
+@ray.remote
+def process_courses(model, courses):
+    try:
+        return asyncio.run(_process_courses(model, courses))
+    except Exception as e:
+        debug_print_trace()
+        print(f"Unhandled error generating courses: {e}")
 
-def process_courses(courses):
-    return asyncio.run(_process_courses(courses))
+@ray.remote
+def process_course(model, course):
+    try:
+        return asyncio.run(_process_course(model, course))
+    except Exception as e:
+        debug_print_trace()
+        print(f"Unhandled error generating course: {e}")
 
 
 def load_topics(in_file: str, max_topics: Optional[str]):
@@ -113,15 +127,29 @@ if __name__ == "__main__":
     # Everything is cached, so exact duplicates will result in the same output
     topics = exact_deduplicate(topics)
 
-    total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+    total_processes = args.workers
+    func = process_course
 
-    # group topics into batches of settings.THREADS_PER_WORKER
-    batched_topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in range(0, len(topics), settings.THREADS_PER_WORKER)]
+    if settings.THREADS_PER_WORKER > 1:
+        # group topics into batches of settings.THREADS_PER_WORKER
+        topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in
+                          range(0, len(topics), settings.THREADS_PER_WORKER)]
+        total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+        func = process_courses
 
-    courses = process_map(process_courses, batched_topics, max_workers=total_processes, chunksize=1)
+    ray.init(num_cpus=total_processes)
 
-    # Flatten courses list
-    courses = [course for batch in courses for course in batch]
+    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    model_ref = ray.put(model)
+
+    print(f"Generating {len(topics)} course batches with {total_processes} processes")
+    futures = [func.remote(model, batch) for batch in topics]
+
+    courses = ray.get(futures)
+
+    if settings.THREADS_PER_WORKER > 1:
+        # Flatten courses list
+        courses = [course for batch in courses for course in batch]
 
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
         for course, topic in zip(courses, topics):
@@ -137,6 +165,8 @@ if __name__ == "__main__":
                 "markdown": course.markdown
             }
             f.write(json.dumps(json_data) + '\n')
+
+    ray.shutdown()
 
 
 
