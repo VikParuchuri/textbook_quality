@@ -2,5 +2,23 @@
   {
     "subject": "Programming languages",
     "json": ["Python", "JavaScript", "Java", "C++", "C#", "Ruby", "PHP", "Swift", "Go", "Rust"]
+  },
+  {
+    "subject": "Computer science books",
+    "json": [
+      "Introduction to the Theory of Computation",
+  "Artificial Intelligence: A Modern Approach",
+  "Clean Code: A Handbook of Agile Software Craftsmanship",
+  "Algorithms Unlocked",
+  "Data Structures and Algorithms Made Easy",
+  "Computer Networking: A Top-Down Approach",
+  "Grokking Algorithms",
+  "The Pragmatic Programmer",
+  "Computer Science: An Overview",
+  "Design Patterns: Elements of Reusable Object-Oriented Software",
+  "Introduction to Algorithms",
+  "The Elements of Statistical Learning",
+  "Computational Complexity: A Modern Approach"
+    ]
   }
 ]

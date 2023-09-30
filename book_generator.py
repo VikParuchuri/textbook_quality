@@ -34,7 +34,7 @@ async def save_course(course: Course):
 
 def get_json_data_from_course(course: Course):
     json_data = {
-        "topic": topic,
+        "topic": course.topic,
         "model": settings.LLM_TYPE,
         "concepts": course.concepts,
         "outline": course.outline,
@@ -81,7 +81,7 @@ async def generate_single_course(model, course_name, outline_items=12):
     md = render_components_to_output_markdown(components)
 
     flat_context = None if context is None else [item.json() for item in context]
-    course = Course(topic=topic, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=flat_context)
+    course = Course(topic=course_name, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=flat_context)
     await save_course(course)
 
     return course
@@ -116,15 +116,12 @@ def process_course(model, course):
         print(f"Unhandled error generating course: {e}")
 
 
-def load_topics(in_file: str, max_topics: Optional[str]):
+def load_topics(in_file: str):
     with open(os.path.join(settings.DATA_DIR, in_file)) as f:
         topics = json.load(f)
 
     random.seed(1)
     random.shuffle(topics)
-
-    if max_topics is not None:
-        topics = topics[:max_topics]
 
     return topics
 
@@ -137,13 +134,21 @@ def to_iterator(obj_ids):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Given a topic file, generate synthetic books.")
-    parser.add_argument("in_file", help="Input filename (flat json list)")
+    parser.add_argument("in_file", help="Input filename (flat json list).  One file or a comma-separated list of files.")
     parser.add_argument("out_file", help="Output filename (jsonl)")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of courses to generate")
     parser.add_argument("--workers", type=int, default=5, help="Number of workers to use")
     args = parser.parse_args()
 
-    topics = load_topics(args.in_file, max_topics=args.max)
+    # Load in topics, limit to max if needed
+    # Also shuffle randomly (with a seed)
+    topics = []
+    in_files = args.in_file.split(",")
+    for in_file in in_files:
+        topics += load_topics(in_file.strip())
+
+    if args.max is not None:
+        topics = topics[:args.max]
 
     # Everything is cached, so exact duplicates will result in the same output
     topics = exact_deduplicate(topics)
