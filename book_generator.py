@@ -20,6 +20,7 @@ import ray
 
 from app.util import debug_print_trace, exact_deduplicate
 
+
 async def query_course(topic: str, model: str):
     lesson = await load_cached_course(model, topic)
     return lesson
@@ -29,6 +30,18 @@ async def save_course(course: Course):
     async with get_session() as db:
         db.add(course)
         await db.commit()
+
+
+def get_json_data_from_course(course: Course):
+    json_data = {
+        "topic": topic,
+        "model": settings.LLM_TYPE,
+        "concepts": course.concepts,
+        "outline": course.outline,
+        "markdown": course.markdown,
+        "components": course.components
+    }
+    return json.dumps(json_data)
 
 
 async def generate_single_course(model, course_name, outline_items=12):
@@ -71,15 +84,7 @@ async def generate_single_course(model, course_name, outline_items=12):
     course = Course(topic=topic, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=flat_context)
     await save_course(course)
 
-    json_data = {
-        "topic": topic,
-        "model": settings.LLM_TYPE,
-        "concepts": course.concepts,
-        "outline": course.outline,
-        "markdown": course.markdown,
-        "components": course.components
-    }
-    return json.dumps(json_data)
+    return course
 
 
 async def _process_course(model, topic):
@@ -170,19 +175,20 @@ if __name__ == "__main__":
         courses = [course for batch in courses for course in batch]
 
 
+    course_count = 0
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
         for course, topic in zip(courses, topics):
             # Filter out courses that didn't generate properly
             if course is None or isinstance(course, Exception):
                 continue
 
-            course = json.loads(course)
-
             if course.markdown is None or len(course.markdown) == 0:
                 continue
 
-            f.write(json.dumps(course) + '\n')
-
+            course_count += 1
+            json_data = get_json_data_from_course(course)
+            f.write(json_data + '\n')
+    print(f"Generated {course_count} courses")
     ray.shutdown()
 
 
