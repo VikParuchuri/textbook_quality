@@ -59,9 +59,9 @@ async def generate_lesson(
 
         current_section = f"{last_section}\n\n{current_section_header}".strip()
 
-        # Filter research notes to save tokens, only keep notes relevant to the next 3 sections
+        # Filter research notes to save tokens, only keep notes relevant to the next 5 sections
         # Find the indices of the next sections
-        future_sections = set(list(range(generated_sections, len(numbered_outline)))[:3])
+        future_sections = set(list(range(generated_sections, len(numbered_outline)))[:5])
         selected_research_notes = None
         if research_notes is not None:
             selected_research_notes = []

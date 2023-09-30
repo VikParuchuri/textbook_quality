@@ -30,6 +30,8 @@ class Settings(BaseSettings):
         "gpt-3.5-turbo-16k": {"max_tokens": 16384},
         "gpt-3.5-turbo-instruct": {"max_tokens": 4097},
         "llama": {"max_tokens": 8192},
+        "gpt-4": {"max_tokens": 8192},
+        "gpt-4-32k": {"max_tokens": 32768},
     }
 
     LLM_TEMPERATURE: float = 0.5

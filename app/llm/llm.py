@@ -58,7 +58,7 @@ async def generate_response(
     for i in range(max_tries):
         try:
             match model:
-                case "gpt-3.5-turbo":
+                case "gpt-3.5-turbo" | "gpt-4":
                     prompt_tokens = oai_tokenize_prompt(prompt)
 
                     # Reduce tokens requested if we have too many in the prompt
