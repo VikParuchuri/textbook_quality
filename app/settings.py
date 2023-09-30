@@ -52,6 +52,7 @@ class Settings(BaseSettings):
 
     # General
     THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
+    RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
 
     class Config:
         env_file = find_dotenv("local.env")

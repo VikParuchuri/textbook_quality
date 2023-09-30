@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import time
 from typing import AsyncGenerator, List, Optional
@@ -102,7 +103,12 @@ async def generate_response(
                         stop_tokens,
                         model=model,
                     )
-                case "llama":
+                case _:
+                    if model not in settings.LLM_TYPES:
+                        raise NotImplementedError(
+                            "This LLM type is not supported currently."
+                        )
+
                     prompt_tokens = oai_tokenize_prompt(prompt)
 
                     allowed_tokens = settings.LLM_TYPES[model]["max_tokens"]
@@ -122,10 +128,6 @@ async def generate_response(
                         stop_tokens,
                         model=model,
                     )
-                case _:
-                    raise NotImplementedError(
-                        "This LLM type is not supported currently."
-                    )
             break
         except (GenerationError, RateLimitError, InvalidRequestError):
             # Re-raise error if we're on the last try
@@ -133,7 +135,7 @@ async def generate_response(
             if i == max_tries - 1:
                 raise
 
-            time.sleep(30 * (i + 1))
+            await asyncio.sleep(30 * (i + 1))
 
     full_text = ""
     async for chunk in response:

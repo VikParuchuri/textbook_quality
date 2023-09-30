@@ -91,12 +91,12 @@ class TopicEmbedding:
 
 
 class EmbeddingContext:
-    def __init__(self):
+    def __init__(self, model):
         self.embeddings = None
         self.content = []
         self.lengths = []
         self.text_data = []
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.model = model
 
     def add_resources(self, resources):
         for resource in resources:
