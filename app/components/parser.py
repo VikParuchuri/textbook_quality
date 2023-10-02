@@ -1,14 +1,23 @@
+import json
 import re
 import secrets
-from typing import get_args
+from typing import get_args, List, Dict
 
 from app.components.schemas import (
     COMPONENT_MAP,
     COMPONENT_VERSION,
     ComponentNames,
-    ExerciseModes,
+    ExerciseModes, AllLessonComponentData,
 )
 from app.settings import settings
+
+
+def parse_components_from_dicts(components: List[Dict]) -> List[AllLessonComponentData]:
+    new_components = []
+    for component in components:
+        component_cls = COMPONENT_MAP[component["type"]]
+        new_components.append(component_cls(**component))
+    return new_components
 
 
 def parse_single_component(component_type: str, markdown: str, key: str = None):

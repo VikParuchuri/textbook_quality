@@ -21,6 +21,7 @@ class Course(BaseDBModel, table=True):
     components: List[AllLessonComponentData] = Field(
         sa_column=Column(JSON), default=list()
     )
+    queries: List[str] = Field(sa_column=Column(JSON), default=list())
     context: List[ResearchNote] = Field(sa_column=Column(JSON), default=list())
 
     @validator("context")

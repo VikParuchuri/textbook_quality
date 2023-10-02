@@ -57,7 +57,8 @@ async def generate_lesson(
             [current_section_component]
         )
 
-        current_section = f"{last_section}\n\n{current_section_header}".strip()
+        current_section = f"{last_section.strip()}\n\n{current_section_header.strip()}"
+        current_section = f"{current_section}\n"
 
         # Filter research notes to save tokens, only keep notes relevant to the next 5 sections
         # Find the indices of the next sections

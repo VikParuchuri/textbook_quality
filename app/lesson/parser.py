@@ -47,9 +47,9 @@ def render_lesson_to_markdown(
     markdown = ""
     for type, content in components:
         if include_type:
-            markdown += f"\n\n---{type}\n\n{content}"
+            markdown += f"\n\n---{type}\n\n{content.strip()}"
         else:
-            markdown += f"\n\n{content}"
+            markdown += f"\n\n{content.strip()}"
     return markdown
 
 

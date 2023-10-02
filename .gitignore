@@ -2,6 +2,8 @@
 .DS_Store
 *.env
 .env
+finetune
+*.tar.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

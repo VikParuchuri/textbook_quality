@@ -18,13 +18,12 @@ async def create_course_concepts(course_name: str):
     try:
         concepts = await generate_concepts(course_name)
         if concepts.feasible:
-            topic = concepts.topic
             generated_concepts = concepts.concepts
     except (GenerationError, RateLimitError, InvalidRequestError) as e:
         debug_print_trace()
         print(f"Error generating concepts for {course_name}: {e}")
 
-    return topic, generated_concepts
+    return generated_concepts
 
 
 async def create_course_outline(

@@ -30,7 +30,7 @@ class GeneratedOutlineData(BaseModel):
     queries: List[str] | None = None
 
 
-def outline_prompt(topic: str, concepts: List[str], item_count: int = 10) -> str:
+def outline_prompt(topic: str, concepts: List[str], item_count: int = 10, include_examples=True) -> str:
     with open(os.path.join(settings.EXAMPLE_JSON_DIR, "outline.json")) as f:
         examples = json.load(f)
     input = OrderedDict([("topic", topic), ("concepts", concepts)])
@@ -41,6 +41,7 @@ def outline_prompt(topic: str, concepts: List[str], item_count: int = 10) -> str
         topic=topic,
         concepts=concepts,
         item_count=item_count,
+        include_examples=include_examples,
     )
     return prompt
 

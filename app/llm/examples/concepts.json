@@ -2,7 +2,6 @@
   {
     "topic": "chemistry",
     "json": {
-      "programming": false,
       "feasible": true,
       "concepts": [
         "Atomic structure",
@@ -16,7 +15,6 @@
   {
     "topic": "introduction to python programming",
     "json": {
-      "programming": true,
       "feasible": true,
       "concepts": [
         "Data types",
