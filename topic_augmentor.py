@@ -33,9 +33,13 @@ if __name__ == "__main__":
     parser.add_argument("in_file", help="Input filename (flat json list)")
     parser.add_argument("out_file", help="Output filename (flat json list)")
     parser.add_argument("--domain", help="Specific domain for the topics", default=None, type=str)
+    parser.add_argument("--max", type=int, default=None, help="Maximum number of courses to generate")
     args = parser.parse_args()
 
     titles = load_processed_titles(args.in_file)
+    # Filter titles to max if needed
+    if args.max:
+        titles = titles[:args.max]
 
     topics_from_titles = copy(titles)
     for title in tqdm(titles):

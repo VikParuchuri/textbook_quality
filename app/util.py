@@ -41,6 +41,9 @@ def exact_deduplicate(strings):
     seen = set()
     result = []
     for string in strings:
+        if not isinstance(string, str):
+            continue
+
         if string not in seen:
             seen.add(string)
             result.append(string)

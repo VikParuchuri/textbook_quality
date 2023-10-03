@@ -17,7 +17,7 @@ from app.util import extract_only_json_dict
 
 outline_settings = GenerationSettings(
     temperature=0.6,
-    max_tokens=1024,
+    max_tokens=2048,
     timeout=60,
     stop_tokens=None,
     prompt_type="outline",
@@ -30,7 +30,7 @@ class GeneratedOutlineData(BaseModel):
     queries: List[str] | None = None
 
 
-def outline_prompt(topic: str, concepts: List[str], item_count: int = 10) -> str:
+def outline_prompt(topic: str, concepts: List[str], item_count: int = settings.SECTIONS_PER_LESSON, include_examples=True) -> str:
     with open(os.path.join(settings.EXAMPLE_JSON_DIR, "outline.json")) as f:
         examples = json.load(f)
     input = OrderedDict([("topic", topic), ("concepts", concepts)])
@@ -41,6 +41,7 @@ def outline_prompt(topic: str, concepts: List[str], item_count: int = 10) -> str
         topic=topic,
         concepts=concepts,
         item_count=item_count,
+        include_examples=include_examples,
     )
     return prompt
 
@@ -48,9 +49,6 @@ def outline_prompt(topic: str, concepts: List[str], item_count: int = 10) -> str
 def parse_json_data(outline: dict) -> GeneratedOutlineData:
     outline = parse_obj_as(GeneratedOutlineData, outline)
     # Get rid of prefix numbers if they exist (they are sometimes added, but we want to strip them out for consistency)
-    outline.outline = [
-        re.sub(r"^\d+\.\s", "", item).strip() for item in outline.outline
-    ]
     return outline
 
 
@@ -119,3 +117,14 @@ async def generate_outline(
     except JSONDecodeError as e:
         raise GenerationError(e)
     yield parse_json_data(data)
+
+
+def renumber_outline(outline):
+    def renumber(match):
+        major, minor = int(match.group(1)), match.group(2)
+        major -= 1
+        return f"{major}{minor}"
+
+    new_outline = [re.sub(r"(\d+)(\..*|$)", renumber, chapter) for chapter in outline]
+
+    return new_outline

@@ -84,11 +84,8 @@ def lesson_prompt(
     input = OrderedDict(items)
 
     sections_to_author = len(outline) - current_section_index
-    sections_to_author = min(
-        sections_to_author, settings.SECTIONS_PER_LESSON
-    )  # Don't author more than 1 lesson at once
     outline_items_to_author = outline[
-        current_section_index : current_section_index + sections_to_author
+        current_section_index: current_section_index + sections_to_author
     ]
     outline_items_to_author_str = ",".join(outline_items_to_author)
     outline_stop_item = outline_items_to_author[-1]

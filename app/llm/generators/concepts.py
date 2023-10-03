@@ -31,11 +31,11 @@ concept_settings = GenerationSettings(
 )
 
 
-def concept_prompt(topic: str) -> str:
+def concept_prompt(topic: str, include_examples=True) -> str:
     with open(os.path.join(settings.EXAMPLE_JSON_DIR, "concepts.json")) as f:
         examples = json.load(f)
     input = OrderedDict([("topic", topic)])
-    prompt = build_prompt("concepts", input, examples)
+    prompt = build_prompt("concepts", input, examples, include_examples=include_examples)
     return prompt
 
 

@@ -12,6 +12,7 @@ from app.course.tasks import create_course_concepts, create_course_outline, quer
 from app.course.models import load_cached_course, Course
 from app.lesson.tasks import generate_lesson
 from app.lesson.output import render_components_to_output_markdown
+from app.llm.generators.outline import renumber_outline
 from app.settings import settings
 import json
 import os
@@ -32,15 +33,26 @@ async def save_course(course: Course):
         await db.commit()
 
 
-def get_json_data_from_course(course: Course):
+def get_json_data_from_course(course: Course, extended_fields=False):
     json_data = {
         "topic": course.topic,
         "model": settings.LLM_TYPE,
         "concepts": course.concepts,
         "outline": course.outline,
         "markdown": course.markdown,
-        "components": course.components
     }
+
+    if extended_fields:
+        if isinstance(course.components[0], str):
+            json_data["components"] = course.components
+        else:
+            json_data["components"] = [c.json() for c in course.components]
+
+        if course.context is None or len(course.context) == 0 or isinstance(course.context[0], str):
+            json_data["context"] = course.context
+        else:
+            json_data["context"] = [v.json() for v in course.context]
+        json_data["queries"] = course.queries
     return json.dumps(json_data)
 
 
@@ -49,10 +61,10 @@ async def generate_single_course(model, course_name, outline_items=12):
 
     course = await query_course(course_name, settings.LLM_TYPE)
     if course is not None:
-        await asyncio.sleep(.01) # Sleep to avoid high CPU usage with many workers
+        await asyncio.sleep(.001) # Sleep to avoid high CPU usage with many workers
         return course
 
-    topic, concepts = await create_course_concepts(course_name)
+    concepts = await create_course_concepts(course_name)
     if concepts is None:
         return
 
@@ -64,12 +76,18 @@ async def generate_single_course(model, course_name, outline_items=12):
     # Remove the intro if it exists
     if "intro" in outline[0].lower():
         outline = outline[1:]
+        # Remove sections of intro
+        while outline[0].startswith("1."):
+            outline = outline[1:]
+        outline = renumber_outline(outline)
+
 
     context = None
     if queries is not None:
         try:
             # Up to one retrieved passage per outline item
-            context = await query_course_context(model, queries, outline)
+            context_outline = [item.split(" ", 1)[-1] for item in outline]
+            context = await query_course_context(model, queries, context_outline)
         except Exception as e:
             debug_print_trace()
             print(f"Error generating context for {course_name}: {e}")
@@ -80,8 +98,7 @@ async def generate_single_course(model, course_name, outline_items=12):
 
     md = render_components_to_output_markdown(components)
 
-    flat_context = None if context is None else [item.json() for item in context]
-    course = Course(topic=course_name, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=flat_context)
+    course = Course(topic=course_name, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=context, queries=queries if queries is not None else [])
     await save_course(course)
 
     return course
@@ -138,6 +155,9 @@ if __name__ == "__main__":
     parser.add_argument("out_file", help="Output filename (jsonl)")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of courses to generate")
     parser.add_argument("--workers", type=int, default=5, help="Number of workers to use")
+    parser.add_argument("--extended-fields", action="store_true", default=False, help="Include extended fields in output")
+    parser.add_argument("--no_cache", action="store_true", default=False, help="Don't use the cache")
+
     args = parser.parse_args()
 
     # Load in topics, limit to max if needed
@@ -168,7 +188,7 @@ if __name__ == "__main__":
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     model_ref = ray.put(model)
 
-    print(f"Generating {len(topics)} course batches with {total_processes} processes")
+    print(f"Generating {len(topics)} course batches with {total_processes} processes from filename(s) {in_files}")
     futures = [func.remote(model_ref, batch) for batch in topics]
 
     courses = []
@@ -179,10 +199,9 @@ if __name__ == "__main__":
         # Flatten courses list
         courses = [course for batch in courses for course in batch]
 
-
     course_count = 0
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
-        for course, topic in zip(courses, topics):
+        for course in courses:
             # Filter out courses that didn't generate properly
             if course is None or isinstance(course, Exception):
                 continue
@@ -191,7 +210,7 @@ if __name__ == "__main__":
                 continue
 
             course_count += 1
-            json_data = get_json_data_from_course(course)
+            json_data = get_json_data_from_course(course, extended_fields=args.extended_fields)
             f.write(json_data + '\n')
     print(f"Generated {course_count} courses")
     ray.shutdown()

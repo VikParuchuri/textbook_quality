@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from pydantic import validator
@@ -21,6 +22,7 @@ class Course(BaseDBModel, table=True):
     components: List[AllLessonComponentData] = Field(
         sa_column=Column(JSON), default=list()
     )
+    queries: List[str] = Field(sa_column=Column(JSON), default=list())
     context: List[ResearchNote] = Field(sa_column=Column(JSON), default=list())
 
     @validator("context")
@@ -43,6 +45,6 @@ async def load_cached_course(model: str, topic: str):
         course = course[0]
 
     if course.context is not None:
-        course.context = [ResearchNote(**v) for v in course.context]
+        course.context = [ResearchNote(**json.loads(v)) for v in course.context]
 
     return course

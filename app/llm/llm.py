@@ -50,6 +50,7 @@ async def generate_response(
         )
         prompt_model = query.first()
 
+
     if prompt_model is not None and cache:
         yield prompt_model.response
         return

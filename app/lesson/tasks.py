@@ -23,11 +23,11 @@ async def generate_lesson(
     research_notes: List[ResearchNote] | None = None,
 ) -> List[AllLessonComponentData] | None:
     # Add numbers to the outline - needed for generating the lesson
-    numbered_outline = [f"{i + 1}. {outline}" for i, outline in enumerate(outline)]
+    numbered_outline = outline
 
     components = []
     generated_sections = 0
-    iterations = generated_sections
+    iterations = 0
 
     while generated_sections < len(numbered_outline) and iterations < len(
         numbered_outline
@@ -57,7 +57,8 @@ async def generate_lesson(
             [current_section_component]
         )
 
-        current_section = f"{last_section}\n\n{current_section_header}".strip()
+        current_section = f"{last_section.strip()}\n\n{current_section_header.strip()}"
+        current_section = f"{current_section}\n"
 
         # Filter research notes to save tokens, only keep notes relevant to the next 5 sections
         # Find the indices of the next sections
@@ -98,6 +99,15 @@ async def generate_lesson(
             return
 
         components = deepcopy(components + new_components)
+
+        last_section_index = [
+                i for i, c in enumerate(components) if c.type == ComponentNames.section
+            ][-1]
+
+        # Handle partially generated (cut-off) sections
+        if len(components) - last_section_index < 3 and len(components[-1].markdown) < 500:
+            # If we don't have enough components in the last section, it may have been cut off
+            components = components[:last_section_index]
 
         iterations += 1
         generated_sections = len(

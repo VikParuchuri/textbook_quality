@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Content
-    SECTIONS_PER_LESSON: int = 20  # Lower this to make books shorter
+    SECTIONS_PER_LESSON: int = 30  # Lower this to make books shorter
     INCLUDE_EXAMPLES: bool = (
         True  # Include examples in prompts, False with custom model
     )

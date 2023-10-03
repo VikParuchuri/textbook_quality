@@ -11,21 +11,7 @@ class LessonComponentData(BaseModel):
     key: str
     type: settings.VALID_COMPONENTS  # these are the component types
     markdown: str = ""
-    version: int
-    pending: bool = False
-    generation_error: bool = False
-    error_message: str = None
-    generation_needed: bool = True
-    fetch_needed: bool = False
-
-    @validator("version")
-    def validate_version(cls, value):
-        try:
-            int(value)
-        except Exception:
-            raise ValueError("Version must be an integer")
-        return int(value)
-
+    version: int = 1
 
 class MarkdownComponentData(LessonComponentData):
     type: Literal["text", "example", "diagram", "section"]
