@@ -23,11 +23,11 @@ async def generate_lesson(
     research_notes: List[ResearchNote] | None = None,
 ) -> List[AllLessonComponentData] | None:
     # Add numbers to the outline - needed for generating the lesson
-    numbered_outline = [f"{i + 1}. {outline}" for i, outline in enumerate(outline)]
+    numbered_outline = outline
 
     components = []
     generated_sections = 0
-    iterations = generated_sections
+    iterations = 0
 
     while generated_sections < len(numbered_outline) and iterations < len(
         numbered_outline

@@ -24,9 +24,6 @@ def render_components_to_output_markdown(
                     )
                 )
             case ComponentNames.section:
-                component.markdown = remove_leading_number_and_period(
-                    component.markdown
-                )
                 if not component.markdown.startswith("#"):
                     component.markdown = f"# {component.markdown}"
                 tuples.append((component.type, component.markdown))
@@ -54,8 +51,3 @@ def remove_section_paragraphs(text):
 
     # Reconstruct the text from the remaining paragraphs
     return "\n".join(paragraphs).strip()
-
-
-def remove_leading_number_and_period(s):
-    # Use regex to match an optional "# " followed by a number, period, and a space
-    return re.sub(r"^(#\s)?\d+\.\s*", "", s)
