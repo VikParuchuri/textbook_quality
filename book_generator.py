@@ -48,7 +48,7 @@ def get_json_data_from_course(course: Course, extended_fields=False):
         else:
             json_data["components"] = [c.json() for c in course.components]
 
-        if isinstance(course.context[0], str):
+        if course.context is None or len(course.context) == 0 or isinstance(course.context[0], str):
             json_data["context"] = course.context
         else:
             json_data["context"] = [v.json() for v in course.context]
