@@ -28,6 +28,7 @@ async def generate_lesson(
     components = []
     generated_sections = 0
     iterations = 0
+    use_cache = True
 
     while generated_sections < len(numbered_outline) and iterations < len(
         numbered_outline
@@ -80,6 +81,7 @@ async def generate_lesson(
                 course_components,
                 research_notes=selected_research_notes,
                 include_examples=settings.INCLUDE_EXAMPLES,
+                cache=use_cache
             )
             new_components = []
             new_component_keys = []
@@ -100,14 +102,19 @@ async def generate_lesson(
 
         components = deepcopy(components + new_components)
 
-        last_section_index = [
+        all_section_headers = [
                 i for i, c in enumerate(components) if c.type == ComponentNames.section
-            ][-1]
+            ]
+        last_section_index = all_section_headers[-1]
 
         # Handle partially generated (cut-off) sections
-        if len(components) - last_section_index < 3 and len(components[-1].markdown) < 500:
+        # Only do this if there are few components, and it's not the end of the lesson
+        if len(components) - last_section_index < 3 and len(components[-1].markdown) < 500 and len(all_section_headers) < len(numbered_outline):
             # If we don't have enough components in the last section, it may have been cut off
             components = components[:last_section_index]
+            use_cache = False
+        else:
+            use_cache = True
 
         iterations += 1
         generated_sections = len(
@@ -124,6 +131,7 @@ async def generate_single_lesson_chunk(
     components: List[str],
     research_notes: List[ResearchNote] | None,
     include_examples: bool,
+    cache: bool
 ) -> AsyncGenerator[List[AllLessonComponentData], None]:
     response = generate_lessons(
         numbered_outline,
@@ -133,6 +141,7 @@ async def generate_single_lesson_chunk(
         components,
         research_notes=research_notes,
         include_examples=include_examples,
+        cache=cache,
     )
 
     async for chunk in response:

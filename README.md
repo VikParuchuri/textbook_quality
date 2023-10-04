@@ -33,6 +33,8 @@ You can see all the available configuration values in `app/settings.py`.
 - Add your serply key (`SERPLY_KEY="..."`) or serpapi key (`SERPAPI_KEY="..."`).
 - Add `SEARCH_BACKEND=serply` or `SEARCH_BACKEND=serpapi` to use the appropriate backend.
 
+By default, this will use `gpt-3.5`.  You can use `gpt-4` by setting the env vars `LLM_TYPE`, `LLM_INSTRUCT_TYPE` to `gpt-4`.  You may be able to get away with setting `LLM_EXTENDED_TYPE` to `gpt-4` as well, but you may need longer than 8k context.
+
 ### With vllm or other openai-compatible API and retrieval
 
 - Set `OPENAI_KEY` to the value of your API key, or a dummy value.

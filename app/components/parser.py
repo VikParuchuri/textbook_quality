@@ -41,9 +41,11 @@ def parse_single_component(component_type: str, markdown: str, key: str = None):
                     answer = "\n".join(exercise_data[1:])
             instructions = instructions.strip()
             instructions = (
-                instructions.replace("Instructions\n", "")
+                instructions.replace("Instructions\n", "").
+                replace("Instructions:\n", "")
                 .replace("\nExercise\n", "")
                 .replace("\nExercise:\n", "")
+                .strip()
             )
 
             mode = (

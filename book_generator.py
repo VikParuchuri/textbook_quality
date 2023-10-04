@@ -86,6 +86,7 @@ async def generate_single_course(model, course_name, outline_items=12):
     if queries is not None:
         try:
             # Up to one retrieved passage per outline item
+            # Remove numbers from outline for use in retrieval
             context_outline = [item.split(" ", 1)[-1] for item in outline]
             context = await query_course_context(model, queries, context_outline)
         except Exception as e:
