@@ -58,6 +58,8 @@ def render_components_to_markdown(components: List[AllLessonComponentData]) -> s
     for component in components:
         match component.type:
             case ComponentNames.exercise:
+                # Replace instructions headers if needed
+                component.instructions = component.instructions.replace("Instructions\n", "").replace("Instructions:\n", "").strip()
                 tuples.append(
                     (
                         component.type,
