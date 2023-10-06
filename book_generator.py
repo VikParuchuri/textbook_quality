@@ -121,23 +121,23 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
     return course
 
 
-async def _process_course(model, topic, revision):
+async def _process_course(model, topic, args):
     try:
-        return await generate_single_course(model, topic, revision=revision)
+        return await generate_single_course(model, topic, revision=args.revision)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
 
 
 async def _process_courses(model, courses, args):
-    processes = [_process_course(model, course, args.revision) for course in courses]
+    processes = [_process_course(model, course, args) for course in courses]
     return await asyncio.gather(*processes)
 
 
 @ray.remote
 def process_courses(model, courses, args):
     try:
-        return asyncio.run(_process_courses(model, courses, args.revision))
+        return asyncio.run(_process_courses(model, courses, args))
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating courses: {e}")
@@ -145,7 +145,7 @@ def process_courses(model, courses, args):
 @ray.remote
 def process_course(model, course, args):
     try:
-        return asyncio.run(_process_course(model, course, args.revision))
+        return asyncio.run(_process_course(model, course, args))
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
