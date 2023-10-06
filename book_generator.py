@@ -1,6 +1,6 @@
 import asyncio
 import math
-from typing import Optional
+from typing import Optional, Dict
 import argparse
 
 from sentence_transformers import SentenceTransformer
@@ -20,11 +20,6 @@ import random
 import ray
 
 from app.util import debug_print_trace, exact_deduplicate
-
-
-async def query_course(topic: str, model: str):
-    lesson = await load_cached_course(model, topic)
-    return lesson
 
 
 async def save_course(course: Course):
@@ -56,79 +51,101 @@ def get_json_data_from_course(course: Course, extended_fields=False):
     return json.dumps(json_data)
 
 
-async def generate_single_course(model, course_name, outline_items=12):
+async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12):
     components = ["exercise", "example"]
 
-    course = await query_course(course_name, settings.LLM_TYPE)
+    outline = None
+    queries = None
+    concepts = []
+    if isinstance(course_data, dict):
+        course_name = course_data["topic"]
+        outline = course_data["outline"]
+        queries = course_data["queries"]
+    else:
+        course_name = course_data
+
+    course = await load_cached_course(settings.LLM_TYPE, course_name, revision)
     if course is not None:
         await asyncio.sleep(.001) # Sleep to avoid high CPU usage with many workers
         return course
 
-    concepts = await create_course_concepts(course_name)
-    if concepts is None:
-        return
+    if not outline:
+        # Only generate outline if one was not passed in
+        concepts = await create_course_concepts(course_name, revision)
+        if concepts is None:
+            return
 
-    outline, queries = await create_course_outline(course_name, concepts, outline_items)
+        outline, queries = await create_course_outline(course_name, concepts, outline_items, revision)
 
-    if outline is None:
-        return
+        if outline is None:
+            return
 
-    # Remove the intro if it exists
-    if "intro" in outline[0].lower():
-        outline = outline[1:]
-        # Remove sections of intro
-        while outline[0].startswith("1."):
+        # Remove the intro if it exists
+        if "intro" in outline[0].lower():
             outline = outline[1:]
-        outline = renumber_outline(outline)
+            # Remove sections of intro
+            while outline[0].startswith("1."):
+                outline = outline[1:]
+            outline = renumber_outline(outline)
 
+        context = None
+        if queries is not None:
+            try:
+                # Up to one retrieved passage per outline item
+                # Remove numbers from outline for use in retrieval
+                context_outline = [item.split(" ", 1)[-1] for item in outline]
+                context = await query_course_context(model, queries, context_outline)
+            except Exception as e:
+                debug_print_trace()
+                print(f"Error generating context for {course_name}: {e}")
 
-    context = None
-    if queries is not None:
-        try:
-            # Up to one retrieved passage per outline item
-            # Remove numbers from outline for use in retrieval
-            context_outline = [item.split(" ", 1)[-1] for item in outline]
-            context = await query_course_context(model, queries, context_outline)
-        except Exception as e:
-            debug_print_trace()
-            print(f"Error generating context for {course_name}: {e}")
-
-    components = await generate_lesson(course_name, components, outline, research_notes=context)
+    components = await generate_lesson(course_name, components, outline, revision, research_notes=context)
     if components is None:
         return
 
     md = render_components_to_output_markdown(components)
 
-    course = Course(topic=course_name, model=settings.LLM_TYPE, outline=outline, concepts=concepts, markdown=md, components=components, context=context, queries=queries if queries is not None else [])
+    course = Course(
+        topic=course_name,
+        model=settings.LLM_TYPE,
+        outline=outline,
+        concepts=concepts,
+        markdown=md,
+        components=components,
+        context=context,
+        queries=queries if queries is not None else [],
+        version=revision
+    )
     await save_course(course)
 
     return course
 
 
-async def _process_course(model, topic):
+async def _process_course(model, topic, args):
     try:
-        return await generate_single_course(model, topic)
+        return await generate_single_course(model, topic, revision=args.revision)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
 
 
-async def _process_courses(model, courses):
-    processes = [_process_course(model, course) for course in courses]
+async def _process_courses(model, courses, args):
+    processes = [_process_course(model, course, args) for course in courses]
     return await asyncio.gather(*processes)
 
+
 @ray.remote
-def process_courses(model, courses):
+def process_courses(model, courses, args):
     try:
-        return asyncio.run(_process_courses(model, courses))
+        return asyncio.run(_process_courses(model, courses, args))
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating courses: {e}")
 
 @ray.remote
-def process_course(model, course):
+def process_course(model, course, args):
     try:
-        return asyncio.run(_process_course(model, course))
+        return asyncio.run(_process_course(model, course, args))
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
@@ -152,12 +169,13 @@ def to_iterator(obj_ids):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Given a topic file, generate synthetic books.")
-    parser.add_argument("in_file", help="Input filename (flat json list).  One file or a comma-separated list of files.")
+    parser.add_argument("in_file", help="Input filename (flat json list of topics, or dictionary with keys topic, queries, and outline).  One file or a comma-separated list of files.")
     parser.add_argument("out_file", help="Output filename (jsonl)")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of courses to generate")
     parser.add_argument("--workers", type=int, default=5, help="Number of workers to use")
     parser.add_argument("--extended-fields", action="store_true", default=False, help="Include extended fields in output")
     parser.add_argument("--no_cache", action="store_true", default=False, help="Don't use the cache")
+    parser.add_argument("--revision", type=int, default=1, help="Revision number for the course.  Change this to avoid hitting cache if you want to regenerate a course.")
 
     args = parser.parse_args()
 
@@ -186,11 +204,11 @@ if __name__ == "__main__":
 
     ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH)
 
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    model = SentenceTransformer("thenlper/gte-small")
     model_ref = ray.put(model)
 
     print(f"Generating {len(topics)} course batches with {total_processes} processes from filename(s) {in_files}")
-    futures = [func.remote(model_ref, batch) for batch in topics]
+    futures = [func.remote(model_ref, batch, args) for batch in topics]
 
     courses = []
     for x in tqdm(to_iterator(futures), total=len(futures)):

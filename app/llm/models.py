@@ -13,9 +13,10 @@ class PromptTypes(str, BaseEnum):
 
 
 class Prompt(BaseDBModel, table=True):
-    __table_args__ = (UniqueConstraint("hash", "model", name="unique_hash_model"),)
+    __table_args__ = (UniqueConstraint("hash", "model", "version", name="unique_hash_model_version"),)
     hash: str = Field(index=True)
     prompt: str
     response: str
     type: PromptTypes
     model: str
+    version: int = Field(default=1)

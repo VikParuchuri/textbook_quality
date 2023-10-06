@@ -37,14 +37,17 @@ def debug_print_trace():
         print(traceback.format_exc())
 
 
-def exact_deduplicate(strings):
-    seen = set()
+def exact_deduplicate(topics):
     result = []
-    for string in strings:
-        if not isinstance(string, str):
+    for line in topics:
+        if not isinstance(line, (str, dict)):
             continue
 
-        if string not in seen:
-            seen.add(string)
-            result.append(string)
+        if isinstance(line, dict):
+            topic = line["topic"]
+        else:
+            topic = line
+
+        if topic not in result:
+            result.append(line)
     return result

@@ -58,12 +58,12 @@ def after_retry_callback(retry_state):
     after=after_retry_callback,
     reraise=True,
 )
-async def generate_concepts(topic: str) -> CourseGeneratedConcepts:
+async def generate_concepts(topic: str, revision: int) -> CourseGeneratedConcepts:
     prompt = concept_prompt(topic)
     text = ""
     # If we should cache the prompt - skip cache if we're retrying
     should_cache = not getattr(local_data, "is_retry", False)
-    response = generate_response(prompt, concept_settings, cache=should_cache)
+    response = generate_response(prompt, concept_settings, cache=should_cache, revision=revision)
     async for chunk in response:
         text += chunk
     try:

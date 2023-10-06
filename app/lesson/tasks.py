@@ -20,6 +20,7 @@ async def generate_lesson(
     course_name: str,
     course_components: List[str],
     outline: List[str],
+    revision: int,
     research_notes: List[ResearchNote] | None = None,
 ) -> List[AllLessonComponentData] | None:
     # Add numbers to the outline - needed for generating the lesson
@@ -79,9 +80,10 @@ async def generate_lesson(
                 generated_sections,
                 course_name,
                 course_components,
+                revision,
                 research_notes=selected_research_notes,
                 include_examples=settings.INCLUDE_EXAMPLES,
-                cache=use_cache
+                cache=use_cache,
             )
             new_components = []
             new_component_keys = []
@@ -109,7 +111,9 @@ async def generate_lesson(
 
         # Handle partially generated (cut-off) sections
         # Only do this if there are few components, and it's not the end of the lesson
-        if len(components) - last_section_index < 3 and len(components[-1].markdown) < 500 and len(all_section_headers) < len(numbered_outline):
+        if len(components) - last_section_index <= 2 and \
+                len(components[-1].markdown) < 500 and \
+                len(all_section_headers) < len(numbered_outline):
             # If we don't have enough components in the last section, it may have been cut off
             components = components[:last_section_index]
             use_cache = False
@@ -129,9 +133,10 @@ async def generate_single_lesson_chunk(
     current_section_index: int,
     course_name: str,
     components: List[str],
+    revision: int,
     research_notes: List[ResearchNote] | None,
     include_examples: bool,
-    cache: bool
+    cache: bool,
 ) -> AsyncGenerator[List[AllLessonComponentData], None]:
     response = generate_lessons(
         numbered_outline,
@@ -139,6 +144,7 @@ async def generate_single_lesson_chunk(
         current_section_index,
         course_name,
         components,
+        revision,
         research_notes=research_notes,
         include_examples=include_examples,
         cache=cache,

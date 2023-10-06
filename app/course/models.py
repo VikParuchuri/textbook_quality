@@ -12,7 +12,7 @@ from app.course.schemas import ResearchNote
 
 
 class Course(BaseDBModel, table=True):
-    __table_args__ = (UniqueConstraint("topic", "model", name="unique_topic_model"),)
+    __table_args__ = (UniqueConstraint("topic", "model", "version", name="unique_topic_model_version"),)
 
     model: str
     topic: str
@@ -24,6 +24,7 @@ class Course(BaseDBModel, table=True):
     )
     queries: List[str] = Field(sa_column=Column(JSON), default=list())
     context: List[ResearchNote] = Field(sa_column=Column(JSON), default=list())
+    version: int = Field(default=1, )
 
     @validator("context")
     def context_to_dict(cls, val: List[ResearchNote]):
@@ -34,10 +35,10 @@ class Course(BaseDBModel, table=True):
         return [v.json() for v in val]
 
 
-async def load_cached_course(model: str, topic: str):
+async def load_cached_course(model: str, topic: str, revision: int):
     async with get_session() as db:
         query = await db.exec(
-            select(Course).where(Course.topic == topic).where(Course.model == model)
+            select(Course).where(Course.topic == topic, Course.model == model, Course.version == revision)
         )
         course = query.all()
         if len(course) == 0:
