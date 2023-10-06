@@ -9,14 +9,14 @@ from app.services.generators.pdf import download_and_parse_pdfs, search_pdfs
 from app.util import debug_print_trace
 
 
-async def create_course_concepts(course_name: str):
+async def create_course_concepts(course_name: str, revision: int):
     """
     Set the topic and concepts for a course async.
     """
     topic = None
     generated_concepts = None
     try:
-        concepts = await generate_concepts(course_name)
+        concepts = await generate_concepts(course_name, revision)
         if concepts.feasible:
             generated_concepts = concepts.concepts
     except (GenerationError, RateLimitError, InvalidRequestError) as e:
@@ -27,12 +27,12 @@ async def create_course_concepts(course_name: str):
 
 
 async def create_course_outline(
-    course_name: str, concepts: List[str], outline_items: int
+    course_name: str, concepts: List[str], outline_items: int, revision: int
 ):
     outline_list = None
     queries = None
     try:
-        response = generate_outline(course_name, concepts, item_count=outline_items)
+        response = generate_outline(course_name, concepts, revision, item_count=outline_items)
 
         # Stream outline as it generates
         async for outline_data in response:

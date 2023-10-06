@@ -25,6 +25,7 @@ async def generate_response(
     history: Optional[List] = None,
     max_tries: int = 2,
     cache: bool = True,
+    revision: int = 1,
 ) -> AsyncGenerator[str, None]:
     temperature = prompt_settings.temperature
     max_tokens = prompt_settings.max_tokens
@@ -46,7 +47,7 @@ async def generate_response(
     async with get_session() as db:
         # Break if we've already run this prompt
         query = await db.exec(
-            select(Prompt).where(Prompt.hash == hex, Prompt.model == settings.LLM_TYPE)
+            select(Prompt).where(Prompt.hash == hex, Prompt.model == settings.LLM_TYPE, Prompt.version == revision)
         )
         prompt_model = query.first()
 
@@ -157,6 +158,7 @@ async def generate_response(
                 response=full_text,
                 type=prompt_type,
                 model=settings.LLM_TYPE,
+                version=revision,
             )
             db.add(prompt_model)
             await db.commit()

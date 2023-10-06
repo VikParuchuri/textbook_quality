@@ -88,6 +88,7 @@ def after_retry_callback(retry_state):
 async def generate_outline(
     topic: str,
     concepts: List[str],
+    revision: int,
     update_after_chars: int = 50,
     item_count: int = 10,
 ) -> AsyncGenerator[GeneratedOutlineData, None]:
@@ -97,7 +98,7 @@ async def generate_outline(
     text = ""
     # Do not hit cache on retries
     should_cache = not getattr(local_data, "is_retry", False)
-    response = generate_response(prompt, outline_settings, cache=should_cache)
+    response = generate_response(prompt, outline_settings, cache=should_cache, revision=revision)
 
     chunk_len = 0
     async for chunk in response:

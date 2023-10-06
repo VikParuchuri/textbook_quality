@@ -116,6 +116,7 @@ async def generate_lessons(
     current_section_index: int,
     topic: str,
     components: List[str],
+    revision: int,
     research_notes: List[ResearchNote] | None = None,
     include_examples: bool = True,
     update_after_chars: int = 500,
@@ -132,7 +133,7 @@ async def generate_lessons(
     )
 
     text = ""
-    response = generate_response(prompt, lesson_settings, cache=cache)
+    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision)
     chunk_len = 0
 
     # Yield text in batches, to avoid creating too many DB models
