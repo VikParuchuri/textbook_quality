@@ -1,5 +1,6 @@
 import traceback
 from enum import Enum
+import regex
 
 import ftfy
 
@@ -11,17 +12,23 @@ class BaseEnum(Enum):
         return str(self.value)
 
 
-def extract_only_json_list(text: str) -> str:
-    text = text.split("[", 1)[1]
-    text = text.rsplit("]", 1)[0]
-    text = "[" + text + "]"
+def extract_only_json_dict(text: str) -> str:
+    # Extract the first top-level JSON object
+    pattern = r'({(?:[^{}]|(?R))*})'
+    match = regex.search(pattern, text, regex.DOTALL)
+    if match:
+        return match.group(0)
+
     return text
 
 
-def extract_only_json_dict(text: str) -> str:
-    text = text.split("{", 1)[1]
-    text = text.rsplit("}", 1)[0]
-    text = "{" + text + "}"
+def extract_only_json_list(text: str) -> str:
+    # Extract the first top-level JSON object
+    pattern = r'(\[(?:[^\[\]]|(?R))*\])'
+    match = regex.search(pattern, text, regex.DOTALL)
+    if match:
+        return match.group(0)
+
     return text
 
 

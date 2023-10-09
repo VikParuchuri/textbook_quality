@@ -19,10 +19,11 @@ class Settings(BaseSettings):
 
     # Content
     SECTIONS_PER_LESSON: int = 30  # Lower this to make books shorter
+    MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
+    FINETUNED: bool = False # If we're using a finetuned textbook gen model
     INCLUDE_EXAMPLES: bool = (
         True  # Include examples in prompts, False with custom model
     )
-    MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
 
     # LLM
     LLM_TYPES = {

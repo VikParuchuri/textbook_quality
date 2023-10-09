@@ -12,7 +12,7 @@ from app.settings import settings
 lesson_settings = GenerationSettings(
     temperature=0.4,
     max_tokens=6000,
-    timeout=240,
+    timeout=480,
     stop_tokens=None,
     prompt_type="lesson",
 )

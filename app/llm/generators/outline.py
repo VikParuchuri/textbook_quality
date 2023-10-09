@@ -6,6 +6,7 @@ from collections import OrderedDict
 from json import JSONDecodeError
 from typing import AsyncGenerator, List
 
+import ftfy
 from pydantic import BaseModel, parse_obj_as
 from tenacity import retry_if_exception_type, stop_after_attempt, retry, wait_fixed
 
@@ -24,6 +25,8 @@ outline_settings = GenerationSettings(
     model=settings.LLM_INSTRUCT_TYPE,
 )
 
+# This can get better results from a finetuned model, forces a certain outline format
+prompt_start_hint = '\n{"outline": ["1. '
 
 class GeneratedOutlineData(BaseModel):
     outline: List[str]
@@ -43,6 +46,8 @@ def outline_prompt(topic: str, concepts: List[str], item_count: int = settings.S
         item_count=item_count,
         include_examples=include_examples,
     )
+    if settings.FINETUNED:
+        prompt += prompt_start_hint
     return prompt
 
 
@@ -79,7 +84,7 @@ def after_retry_callback(retry_state):
 
 @retry(
     retry=retry_if_exception_type(GenerationError),
-    stop=stop_after_attempt(2),
+    stop=stop_after_attempt(5),
     wait=wait_fixed(2),
     before_sleep=before_retry_callback,
     after=after_retry_callback,
@@ -91,11 +96,14 @@ async def generate_outline(
     revision: int,
     update_after_chars: int = 50,
     item_count: int = 10,
+    include_examples: bool = True
 ) -> AsyncGenerator[GeneratedOutlineData, None]:
     # Sort concepts alphabetically so that the prompt is the same every time
     concepts = sorted(concepts)
-    prompt = outline_prompt(topic, concepts, item_count=item_count)
+    prompt = outline_prompt(topic, concepts, item_count=item_count, include_examples=include_examples)
     text = ""
+    if settings.FINETUNED:
+        text = prompt_start_hint
     # Do not hit cache on retries
     should_cache = not getattr(local_data, "is_retry", False)
     response = generate_response(prompt, outline_settings, cache=should_cache, revision=revision)
@@ -114,6 +122,7 @@ async def generate_outline(
     try:
         # Strip out text before/after the json.  Sometimes the LLM will include something before the json input.
         text = extract_only_json_dict(text)
+        text = str(ftfy.fix_text(text))
         data = json.loads(text.strip())
     except JSONDecodeError as e:
         raise GenerationError(e)
