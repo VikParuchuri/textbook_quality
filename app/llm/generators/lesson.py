@@ -12,8 +12,7 @@ from app.settings import settings
 lesson_settings = GenerationSettings(
     temperature=0.4,
     max_tokens=6000,
-    timeout=480,
-    stop_tokens=None,
+    timeout=1200,
     prompt_type="lesson",
 )
 
@@ -121,6 +120,7 @@ async def generate_lessons(
     include_examples: bool = True,
     update_after_chars: int = 500,
     cache: bool = True,
+    stop_section: str | None = None,
 ) -> AsyncGenerator[str, None]:
     prompt = lesson_prompt(
         outline,
@@ -133,7 +133,11 @@ async def generate_lessons(
     )
 
     text = ""
-    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision)
+    stop_sequences = None
+    if stop_section is not None:
+        stop_sequences = [stop_section]
+
+    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision, stop_sequences=stop_sequences)
     chunk_len = 0
 
     # Yield text in batches, to avoid creating too many DB models

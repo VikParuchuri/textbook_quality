@@ -20,7 +20,6 @@ outline_settings = GenerationSettings(
     temperature=0.6,
     max_tokens=2048,
     timeout=60,
-    stop_tokens=None,
     prompt_type="outline",
     model=settings.LLM_INSTRUCT_TYPE,
 )

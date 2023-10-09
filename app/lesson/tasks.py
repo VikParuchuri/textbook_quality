@@ -22,6 +22,7 @@ async def generate_lesson(
     outline: List[str],
     revision: int,
     research_notes: List[ResearchNote] | None = None,
+    sections_per_generation: int = settings.SECTIONS_PER_GENERATION,
 ) -> List[AllLessonComponentData] | None:
     # Add numbers to the outline - needed for generating the lesson
     numbered_outline = outline
@@ -62,9 +63,14 @@ async def generate_lesson(
         current_section = f"{last_section.strip()}\n\n{current_section_header.strip()}"
         current_section = f"{current_section}\n"
 
+        # When to stop generation
+        stop_section = None
+        if generated_sections + sections_per_generation < len(numbered_outline):
+            stop_section = numbered_outline[generated_sections + sections_per_generation]
+
         # Filter research notes to save tokens, only keep notes relevant to the next 5 sections
         # Find the indices of the next sections
-        future_sections = set(list(range(generated_sections, len(numbered_outline)))[:5])
+        future_sections = set(list(range(generated_sections, len(numbered_outline)))[:sections_per_generation])
         selected_research_notes = None
         if research_notes is not None:
             selected_research_notes = []
@@ -84,6 +90,7 @@ async def generate_lesson(
                 research_notes=selected_research_notes,
                 include_examples=settings.INCLUDE_EXAMPLES,
                 cache=use_cache,
+                stop_section=stop_section,
             )
             new_components = []
             new_component_keys = []
@@ -137,6 +144,7 @@ async def generate_single_lesson_chunk(
     research_notes: List[ResearchNote] | None,
     include_examples: bool,
     cache: bool,
+    stop_section: str | None = None,
 ) -> AsyncGenerator[List[AllLessonComponentData], None]:
     response = generate_lessons(
         numbered_outline,
@@ -148,8 +156,15 @@ async def generate_single_lesson_chunk(
         research_notes=research_notes,
         include_examples=include_examples,
         cache=cache,
+        stop_section=stop_section,
     )
 
+    section_start = f"---{ComponentNames.section}"
+
     async for chunk in response:
+        # Remove the final section header from the chunk
+        # This happens when we hit the stop token
+        if chunk.strip().endswith(section_start):
+            chunk = chunk.strip()[:-len(section_start)]
         new_components = parse_lesson_markdown(chunk)
         yield new_components

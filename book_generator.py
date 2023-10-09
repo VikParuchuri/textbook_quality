@@ -51,7 +51,7 @@ def get_json_data_from_course(course: Course, extended_fields=False):
     return json.dumps(json_data)
 
 
-async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12):
+async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12, cache_only=False):
     components = ["exercise", "example"]
 
     outline = None
@@ -68,6 +68,9 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
     if course is not None:
         await asyncio.sleep(.001) # Sleep to avoid high CPU usage with many workers
         return course
+
+    if cache_only:
+        return None
 
     if not outline:
         # Only generate outline if one was not passed in
@@ -123,7 +126,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
 
 async def _process_course(model, topic, args):
     try:
-        return await generate_single_course(model, topic, revision=args.revision)
+        return await generate_single_course(model, topic, revision=args.revision, cache_only=args.cache_only)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
@@ -176,6 +179,7 @@ if __name__ == "__main__":
     parser.add_argument("--extended-fields", action="store_true", default=False, help="Include extended fields in output")
     parser.add_argument("--no_cache", action="store_true", default=False, help="Don't use the cache")
     parser.add_argument("--revision", type=int, default=1, help="Revision number for the course.  Change this to avoid hitting cache if you want to regenerate a course.")
+    parser.add_argument("--cache-only", action="store_true", default=False, help="Only use the cache, don't generate any new courses")
 
     args = parser.parse_args()
 
@@ -202,7 +206,7 @@ if __name__ == "__main__":
         total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
         func = process_courses
 
-    ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH)
+    ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH, dashboard_host=settings.RAY_DASHBOARD_HOST)
 
     model = SentenceTransformer("thenlper/gte-small")
     model_ref = ray.put(model)
