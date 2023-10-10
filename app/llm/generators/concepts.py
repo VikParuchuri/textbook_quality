@@ -25,7 +25,7 @@ class CourseGeneratedConcepts(BaseModel):
 concept_settings = GenerationSettings(
     temperature=0.7,
     max_tokens=256,
-    timeout=40,
+    timeout=1200,
     prompt_type="concept",
     model=settings.LLM_INSTRUCT_TYPE,
 )

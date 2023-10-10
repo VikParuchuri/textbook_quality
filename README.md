@@ -43,7 +43,7 @@ By default, this will use `gpt-3.5`.  You can use `gpt-4` by setting the env var
 - Set the model name and max tokens in the `LLM_TYPES` setting.
 - Follow the instructions above for the retrieval setup.
 
-The generator ideally needs a context length of up to `16k`, but you can get away with `12k` if you need to.
+The generator ideally needs a context length of up to `16k`, but you can get away with `12k` if you need to.  If you've finetuned your own model for textbook gen (based on the prompts cached in this repo), you can use the `FINETUNED` and `INCLUDE_EXAMPLES` settings to reduce token usage.
 
 ### Without retrieval
 
@@ -73,6 +73,8 @@ Usage example:
 
 ## Generate textbooks
 
+### From titles
+
 This will take a file with a flat json list of topics, and generate one textbook per topic.  The workers flag controls the number of parallel generations.  Lower it if you hit rate limits.
 
 Usage example:
@@ -83,7 +85,31 @@ You can also override settings with environment variables (instead of using `loc
 
 `LLM_TYPE=llama LLM_INSTRUCT_TYPE=llama LLM_EXTENDED_TYPE=llama OPENAI_KEY="llama" OPENAI_BASE_URL="https://vllm-api.com/v1" python book_generator.py topics.json books.jsonl --workers 10`
 
-Note that courses are cached by default, so regenerating a course with the same name twice will not hit the API again.  The cache is specific to each model and each topic.
+You can see all options by running `python book_generator.py --help`.
+
+Note that courses are cached by default, so regenerating a course with the same name twice will not hit the API again.  The cache is specific to each model and each topic.  You can skip the cache by using the `--revision` option to specify a revision number for the courses.
+
+### From outlines
+
+You can also generate a book from an existing outline by creating a jsonl file with the following fields:
+
+- `topic` - The topic/title of the book
+- `outline` - The outline of the book, as a flat json list.  This needs to be in a specific format, see "clean table of contents" below.
+- `queries` - Up to 2 search queries to use for retrieval.  If you don't want to use retrieval, set this to an empty list.
+
+## Clean tables of contents
+
+This will take in a jsonl file with an existing table of contents and title, and process it into the correct format for book generation.
+
+Usage example:
+
+`python toc_cleaner.py toc.jsonl clean_toc.jsonl`
+
+`toc.jsonl` should have the following fields in each line:
+
+- `title` - The title of the book
+- `toc` - a string containing the table of contents.  This can be poorly formatted
+
 
 # Extending
 

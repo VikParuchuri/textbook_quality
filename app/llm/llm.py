@@ -156,7 +156,6 @@ async def generate_response(
     full_text = ""
     async for chunk in response:
         text = chunk.text
-        response_tokens = chunk.tokens
         yield text
         full_text += text
 

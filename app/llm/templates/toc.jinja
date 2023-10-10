@@ -1,0 +1,13 @@
+{% extends "template.jinja" %}
+
+{%block content %}
+You're cleaning up the draft outline for a textbook.  You need to turn the draft outline into a final outline.  The final format should be a flat json list, with each chapter numbered like 1, 2, or 3, and each section numbered like 1.1, or 1.2.  If you need to, you can denote subsections like 1.1.1, or 1.1.2.
+
+Remove any parts of the draft that are not related to the main content of the book.  For example, remove the preface, references, and the glossary.
+
+The final outline will be used to write a high quality textbook for college students.  If the draft outline is insufficient to produce a high quality college textbook, feel free to add to it to make it sufficient.  The final outline should have at least 20 total entries in it.
+
+Also return up to two Google Search queries that you can run to get additional resources on the topic while writing the textbook.  The queries should pertain to the topic of the textbook and the outline.  The queries will help you get information about topics you're not as familiar with, but the topics should not be so specific that no results can be found for them.
+
+Return the outline and queries in JSON format.  Do not include more than 2 items in the queries.  Only respond with valid JSON.
+{% endblock %}

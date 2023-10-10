@@ -10,6 +10,7 @@ class PromptTypes(str, BaseEnum):
     outline = "outline"
     topic = "topic"
     title = "title"
+    toc = "toc"
 
 
 class Prompt(BaseDBModel, table=True):

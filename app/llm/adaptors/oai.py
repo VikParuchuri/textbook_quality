@@ -30,6 +30,7 @@ async def oai_chat_wrapped(
     history: List,
     temperature: float,
     max_tokens: int,
+    inner_timeout: int = settings.LLM_TIMEOUT,
     stop_sequences: Optional[List] = None,
     model: str = settings.LLM_TYPE,
 ) -> AsyncGenerator[str, None]:
@@ -41,6 +42,7 @@ async def oai_chat_wrapped(
         n=1,
         stop=stop_sequences,
         stream=True,
+        request_timeout=inner_timeout,
     )
     async for chunk in response:
         stream = chunk
@@ -54,6 +56,7 @@ async def oai_prompt_wrapped(
     prompt: str,
     temperature: float,
     max_tokens: int,
+    inner_timeout: int = settings.LLM_TIMEOUT,
     stop_sequences: Optional[List] = None,
     model: str = settings.LLM_TYPE,
 ) -> AsyncGenerator[str, None]:
@@ -65,6 +68,7 @@ async def oai_prompt_wrapped(
         n=1,
         stop=stop_sequences,
         stream=True,
+        request_timeout=inner_timeout,
     )
     async for chunk in response:
         stream = chunk
@@ -88,6 +92,7 @@ async def oai_prompt_response(
             temperature,
             max_tokens,
             timeout=timeout,
+            inner_timeout=timeout,
             stop_sequences=stop_sequences,
             model=model,
         )
@@ -130,6 +135,7 @@ async def oai_chat_response(
             temperature,
             max_tokens,
             timeout=timeout,
+            inner_timeout=timeout,
             stop_sequences=stop_sequences,
             model=model,
         )

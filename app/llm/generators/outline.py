@@ -19,7 +19,7 @@ from app.util import extract_only_json_dict
 outline_settings = GenerationSettings(
     temperature=0.6,
     max_tokens=2048,
-    timeout=60,
+    timeout=1200,
     prompt_type="outline",
     model=settings.LLM_INSTRUCT_TYPE,
 )

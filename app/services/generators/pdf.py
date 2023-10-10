@@ -42,7 +42,7 @@ class PDFSearchResult(BaseModel):
     query: str
 
 
-async def search_pdfs(queries: List[str], max_count=3) -> List[PDFSearchResult]:
+async def search_pdfs(queries: List[str], max_count=10) -> List[PDFSearchResult]:
     coroutines = [search_pdf(query, max_count) for query in queries]
     results = await asyncio.gather(*coroutines)
     results = list(chain.from_iterable(results))
