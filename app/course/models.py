@@ -41,9 +41,9 @@ async def load_cached_course(model: str, topic: str, revision: int):
             select(Course).where(Course.topic == topic, Course.model == model, Course.version == revision)
         )
         course = query.all()
-        if len(course) == 0:
-            return None
-        course = course[0]
+    if len(course) == 0:
+        return None
+    course = course[0]
 
     if course.context is not None:
         course.context = [ResearchNote(**json.loads(v)) for v in course.context]

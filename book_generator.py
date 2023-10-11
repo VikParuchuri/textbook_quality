@@ -1,7 +1,7 @@
-import asyncio
 import math
 from typing import Optional, Dict
 import argparse
+import asyncio
 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
@@ -66,7 +66,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
 
     course = await load_cached_course(settings.LLM_TYPE, course_name, revision)
     if course is not None:
-        await asyncio.sleep(.001) # Sleep to avoid high CPU usage with many workers
+        await asyncio.sleep(0.01) # small sleep to avoid excess db load
         return course
 
     if cache_only:
@@ -137,7 +137,7 @@ async def _process_courses(model, courses, args):
     return await asyncio.gather(*processes)
 
 
-@ray.remote
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
 def process_courses(model, courses, args):
     try:
         return asyncio.run(_process_courses(model, courses, args))
@@ -145,7 +145,8 @@ def process_courses(model, courses, args):
         debug_print_trace()
         print(f"Unhandled error generating courses: {e}")
 
-@ray.remote
+
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
 def process_course(model, course, args):
     try:
         return asyncio.run(_process_course(model, course, args))
@@ -170,12 +171,6 @@ def load_topics(in_file: str):
     random.shuffle(topics)
 
     return topics
-
-
-def to_iterator(obj_ids):
-    while obj_ids:
-        done, obj_ids = ray.wait(obj_ids)
-        yield ray.get(done[0])
 
 
 if __name__ == "__main__":
@@ -203,27 +198,39 @@ if __name__ == "__main__":
     # Everything is cached, so exact duplicates will result in the same output
     topics = exact_deduplicate(topics)
 
-    total_processes = args.workers
+    total_processes = math.ceil(args.workers * settings.RAY_CORES_PER_WORKER)
     func = process_course
 
     if settings.THREADS_PER_WORKER > 1:
         # group topics into batches of settings.THREADS_PER_WORKER
         topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in
                           range(0, len(topics), settings.THREADS_PER_WORKER)]
-        total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+        total_processes = math.ceil(total_processes / settings.THREADS_PER_WORKER)
         func = process_courses
 
-    ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH, dashboard_host=settings.RAY_DASHBOARD_HOST)
+    ray.init(
+        num_cpus=total_processes,
+        storage=settings.RAY_CACHE_PATH,
+        _temp_dir=settings.RAY_CACHE_PATH,
+        dashboard_host=settings.RAY_DASHBOARD_HOST
+    )
 
-    model = SentenceTransformer("thenlper/gte-small")
+    model = SentenceTransformer("TaylorAI/gte-tiny")
     model_ref = ray.put(model)
 
     print(f"Generating {len(topics)} course batches with {total_processes} processes from filename(s) {in_files}")
     futures = [func.remote(model_ref, batch, args) for batch in topics]
 
+    # Run all ray tasks
     courses = []
-    for x in tqdm(to_iterator(futures), total=len(futures)):
-        courses.append(x)
+    progress_bar = tqdm(total=len(futures))
+    while len(futures) > 0:
+        finished, futures = ray.wait(
+            futures, timeout=7.0
+        )
+        course = ray.get(finished)
+        courses.extend(course)
+        progress_bar.update(len(course))
 
     if settings.THREADS_PER_WORKER > 1:
         # Flatten courses list

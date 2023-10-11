@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
     RAY_DASHBOARD_HOST: str = "0.0.0.0"
+    RAY_CORES_PER_WORKER = .5 # How many cpu cores to allocate per worker
 
     class Config:
         env_file = find_dotenv("local.env")
