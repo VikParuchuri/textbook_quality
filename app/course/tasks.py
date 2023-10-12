@@ -1,11 +1,14 @@
 from typing import List
 
+from tenacity import RetryError
+
 from app.course.embeddings import EmbeddingContext
 from app.course.schemas import ResearchNote
 from app.llm.exceptions import GenerationError, InvalidRequestError, RateLimitError
 from app.llm.generators.concepts import generate_concepts
 from app.llm.generators.outline import generate_outline
 from app.services.generators.pdf import download_and_parse_pdfs, search_pdfs
+from app.settings import settings
 from app.util import debug_print_trace
 
 
@@ -13,13 +16,12 @@ async def create_course_concepts(course_name: str, revision: int):
     """
     Set the topic and concepts for a course async.
     """
-    topic = None
     generated_concepts = None
     try:
-        concepts = await generate_concepts(course_name, revision)
+        concepts = await generate_concepts(course_name, revision, include_examples=settings.INCLUDE_EXAMPLES)
         if concepts.feasible:
             generated_concepts = concepts.concepts
-    except (GenerationError, RateLimitError, InvalidRequestError) as e:
+    except (GenerationError, RateLimitError, InvalidRequestError, RetryError) as e:
         debug_print_trace()
         print(f"Error generating concepts for {course_name}: {e}")
 
@@ -32,13 +34,13 @@ async def create_course_outline(
     outline_list = None
     queries = None
     try:
-        response = generate_outline(course_name, concepts, revision, item_count=outline_items)
+        response = generate_outline(course_name, concepts, revision, item_count=outline_items, include_examples=settings.INCLUDE_EXAMPLES)
 
         # Stream outline as it generates
         async for outline_data in response:
             outline_list = outline_data.outline
             queries = outline_data.queries
-    except (GenerationError, RateLimitError, InvalidRequestError) as e:
+    except (GenerationError, RateLimitError, InvalidRequestError, RetryError) as e:
         debug_print_trace()
         print(f"Error generating outline for {course_name}")
 

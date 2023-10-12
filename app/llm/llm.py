@@ -26,15 +26,29 @@ async def generate_response(
     max_tries: int = 2,
     cache: bool = True,
     revision: int = 1,
+    stop_sequences: Optional[List[str]] = None,
 ) -> AsyncGenerator[str, None]:
     temperature = prompt_settings.temperature
     max_tokens = prompt_settings.max_tokens
     timeout = prompt_settings.timeout
-    stop_tokens = prompt_settings.stop_tokens
+    prompt_stops = prompt_settings.stop_sequences
     prompt_type = prompt_settings.prompt_type
     model = (
         prompt_settings.model or settings.LLM_TYPE
     )  # Use default model if not specified
+
+    # Stop sequences for the llm
+    stops = []
+    if prompt_stops is not None:
+        stops.extend(prompt_stops)
+    if stop_sequences is not None:
+        stops.extend(stop_sequences)
+
+    # Only support up to 4 stop sequences
+    if len(stops) == 0:
+        stops = None
+    else:
+        stops = stops[:4]
 
     # Remove utf-8 surrogate characters
     prompt = fix_unicode_text(prompt)
@@ -84,7 +98,7 @@ async def generate_response(
                         timeout,
                         max_tokens,
                         history,
-                        stop_tokens,
+                        stops,
                         model=model,
                     )
                 case "gpt-3.5-turbo-instruct":
@@ -102,7 +116,7 @@ async def generate_response(
                         temperature,
                         timeout,
                         max_tokens,
-                        stop_tokens,
+                        stops,
                         model=model,
                     )
                 case _:
@@ -127,7 +141,7 @@ async def generate_response(
                         temperature,
                         timeout,
                         max_tokens,
-                        stop_tokens,
+                        stops,
                         model=model,
                     )
             break
@@ -142,7 +156,6 @@ async def generate_response(
     full_text = ""
     async for chunk in response:
         text = chunk.text
-        response_tokens = chunk.tokens
         yield text
         full_text += text
 

@@ -19,10 +19,12 @@ class Settings(BaseSettings):
 
     # Content
     SECTIONS_PER_LESSON: int = 30  # Lower this to make books shorter
+    SECTIONS_PER_GENERATION: int = 5 # How many sections to generate in one prompt
+    MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
+    FINETUNED: bool = False # If we're using a finetuned textbook gen model
     INCLUDE_EXAMPLES: bool = (
         True  # Include examples in prompts, False with custom model
     )
-    MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
 
     # LLM
     LLM_TYPES = {
@@ -35,7 +37,7 @@ class Settings(BaseSettings):
     }
 
     LLM_TEMPERATURE: float = 0.5
-    LLM_TIMEOUT: int = 120
+    LLM_TIMEOUT: int = 480
     LLM_MAX_RESPONSE_TOKENS: int = 2048
     OPENAI_KEY: str = ""
     OPENAI_BASE_URL: Optional[str] = None
@@ -55,6 +57,8 @@ class Settings(BaseSettings):
     # General
     THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
+    RAY_DASHBOARD_HOST: str = "0.0.0.0"
+    RAY_CORES_PER_WORKER = .5 # How many cpu cores to allocate per worker
 
     class Config:
         env_file = find_dotenv("local.env")

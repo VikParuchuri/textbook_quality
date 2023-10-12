@@ -4,6 +4,7 @@ from collections import OrderedDict
 from json import JSONDecodeError
 from typing import List
 
+import ftfy
 from pydantic import BaseModel
 from tenacity import stop_after_attempt, wait_fixed, before, after, retry, retry_if_exception_type
 import threading
@@ -24,8 +25,7 @@ class CourseGeneratedConcepts(BaseModel):
 concept_settings = GenerationSettings(
     temperature=0.7,
     max_tokens=256,
-    timeout=40,
-    stop_tokens=None,
+    timeout=1200,
     prompt_type="concept",
     model=settings.LLM_INSTRUCT_TYPE,
 )
@@ -52,14 +52,14 @@ def after_retry_callback(retry_state):
 
 @retry(
     retry=retry_if_exception_type(GenerationError),
-    stop=stop_after_attempt(2),
+    stop=stop_after_attempt(5),
     wait=wait_fixed(2),
     before_sleep=before_retry_callback,
     after=after_retry_callback,
     reraise=True,
 )
-async def generate_concepts(topic: str, revision: int) -> CourseGeneratedConcepts:
-    prompt = concept_prompt(topic)
+async def generate_concepts(topic: str, revision: int, include_examples: bool = True) -> CourseGeneratedConcepts:
+    prompt = concept_prompt(topic, include_examples=include_examples)
     text = ""
     # If we should cache the prompt - skip cache if we're retrying
     should_cache = not getattr(local_data, "is_retry", False)
@@ -68,6 +68,7 @@ async def generate_concepts(topic: str, revision: int) -> CourseGeneratedConcept
         text += chunk
     try:
         text = extract_only_json_dict(text)
+        text = str(ftfy.fix_text(text))
         data = json.loads(text.strip())
         concepts = data["concepts"]
         feasible = data["feasible"]

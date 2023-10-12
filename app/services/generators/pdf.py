@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from app.db.session import get_session
 from app.services.adaptors.serpapi import serpapi_pdf_search_settings
 from app.services.adaptors.serply import serply_pdf_search_settings
-from app.services.dependencies import get_stored_url
+from app.services.dependencies import get_stored_urls
 from app.services.exceptions import ProcessingError
 from app.services.models import store_scraped_data
 from app.services.network import download_and_save
@@ -44,7 +44,12 @@ class PDFSearchResult(BaseModel):
 
 async def search_pdfs(queries: List[str], max_count=3) -> List[PDFSearchResult]:
     coroutines = [search_pdf(query, max_count) for query in queries]
-    results = await asyncio.gather(*coroutines)
+
+    # Run queries sequentially
+    results = []
+    for routine in coroutines:
+        results.append(await routine)
+
     results = list(chain.from_iterable(results))
 
     # Filter results to only unique links
@@ -99,9 +104,6 @@ async def search_pdf(query: str, max_count) -> List[PDFSearchResult]:
 async def download_and_parse_pdfs(
     search_results: List[PDFSearchResult],
 ) -> List[PDFData]:
-    # Query if PDFs have already been downloaded and stored
-    pdf_paths = []
-
     # Deduplicate links
     deduped_search_results = []
     seen_links = set()
@@ -110,9 +112,8 @@ async def download_and_parse_pdfs(
             deduped_search_results.append(search_result)
             seen_links.add(search_result.link)
 
-    async with get_session() as db:
-        for search_result in deduped_search_results:
-            pdf_paths.append(await get_stored_url(db, search_result.link))
+    links = [search_result.link for search_result in deduped_search_results]
+    pdf_paths = await get_stored_urls(links)
 
     coroutines = [
         download_and_parse_pdf(search_result, pdf_path) for search_result, pdf_path in zip(deduped_search_results, pdf_paths)

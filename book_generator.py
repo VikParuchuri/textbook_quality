@@ -1,7 +1,7 @@
-import asyncio
 import math
 from typing import Optional, Dict
 import argparse
+import asyncio
 
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
@@ -51,7 +51,7 @@ def get_json_data_from_course(course: Course, extended_fields=False):
     return json.dumps(json_data)
 
 
-async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12):
+async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12, cache_only=False):
     components = ["exercise", "example"]
 
     outline = None
@@ -66,8 +66,11 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
 
     course = await load_cached_course(settings.LLM_TYPE, course_name, revision)
     if course is not None:
-        await asyncio.sleep(.001) # Sleep to avoid high CPU usage with many workers
+        await asyncio.sleep(0.01) # small sleep to avoid excess db load
         return course
+
+    if cache_only:
+        return None
 
     if not outline:
         # Only generate outline if one was not passed in
@@ -88,16 +91,16 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
                 outline = outline[1:]
             outline = renumber_outline(outline)
 
-        context = None
-        if queries is not None:
-            try:
-                # Up to one retrieved passage per outline item
-                # Remove numbers from outline for use in retrieval
-                context_outline = [item.split(" ", 1)[-1] for item in outline]
-                context = await query_course_context(model, queries, context_outline)
-            except Exception as e:
-                debug_print_trace()
-                print(f"Error generating context for {course_name}: {e}")
+    context = None
+    if queries is not None:
+        try:
+            # Up to one retrieved passage per outline item
+            # Remove numbers from outline for use in retrieval
+            context_outline = [item.split(" ", 1)[-1] for item in outline]
+            context = await query_course_context(model, queries, context_outline)
+        except Exception as e:
+            debug_print_trace()
+            print(f"Error generating context for {course_name}: {e}")
 
     components = await generate_lesson(course_name, components, outline, revision, research_notes=context)
     if components is None:
@@ -123,7 +126,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
 
 async def _process_course(model, topic, args):
     try:
-        return await generate_single_course(model, topic, revision=args.revision)
+        return await generate_single_course(model, topic, revision=args.revision, cache_only=args.cache_only)
     except Exception as e:
         debug_print_trace()
         print(f"Unhandled error generating course: {e}")
@@ -134,7 +137,7 @@ async def _process_courses(model, courses, args):
     return await asyncio.gather(*processes)
 
 
-@ray.remote
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
 def process_courses(model, courses, args):
     try:
         return asyncio.run(_process_courses(model, courses, args))
@@ -142,7 +145,8 @@ def process_courses(model, courses, args):
         debug_print_trace()
         print(f"Unhandled error generating courses: {e}")
 
-@ray.remote
+
+@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
 def process_course(model, course, args):
     try:
         return asyncio.run(_process_course(model, course, args))
@@ -153,7 +157,15 @@ def process_course(model, course, args):
 
 def load_topics(in_file: str):
     with open(os.path.join(settings.DATA_DIR, in_file)) as f:
-        topics = json.load(f)
+        if in_file.endswith(".json"):
+            topics = json.load(f)
+        elif in_file.endswith(".jsonl"):
+            lines = list(f)
+            topics = []
+            for line in lines:
+                topics.append(json.loads(line))
+        else:
+            raise Exception(f"Unknown file type for {in_file}")
 
     random.seed(1)
     random.shuffle(topics)
@@ -161,21 +173,15 @@ def load_topics(in_file: str):
     return topics
 
 
-def to_iterator(obj_ids):
-    while obj_ids:
-        done, obj_ids = ray.wait(obj_ids)
-        yield ray.get(done[0])
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Given a topic file, generate synthetic books.")
-    parser.add_argument("in_file", help="Input filename (flat json list of topics, or dictionary with keys topic, queries, and outline).  One file or a comma-separated list of files.")
+    parser.add_argument("in_file", help="Input filename (flat json list of topics, or jsonl file with dictionaries with keys topic, queries, and outline).  One file or a comma-separated list of files.")
     parser.add_argument("out_file", help="Output filename (jsonl)")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of courses to generate")
     parser.add_argument("--workers", type=int, default=5, help="Number of workers to use")
     parser.add_argument("--extended-fields", action="store_true", default=False, help="Include extended fields in output")
-    parser.add_argument("--no_cache", action="store_true", default=False, help="Don't use the cache")
     parser.add_argument("--revision", type=int, default=1, help="Revision number for the course.  Change this to avoid hitting cache if you want to regenerate a course.")
+    parser.add_argument("--cache-only", action="store_true", default=False, help="Only use the cache, don't generate any new courses")
 
     args = parser.parse_args()
 
@@ -192,27 +198,39 @@ if __name__ == "__main__":
     # Everything is cached, so exact duplicates will result in the same output
     topics = exact_deduplicate(topics)
 
-    total_processes = args.workers
+    total_processes = math.ceil(args.workers * settings.RAY_CORES_PER_WORKER)
     func = process_course
 
     if settings.THREADS_PER_WORKER > 1:
         # group topics into batches of settings.THREADS_PER_WORKER
         topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in
                           range(0, len(topics), settings.THREADS_PER_WORKER)]
-        total_processes = math.ceil(args.workers / settings.THREADS_PER_WORKER)
+        total_processes = math.ceil(total_processes / settings.THREADS_PER_WORKER)
         func = process_courses
 
-    ray.init(num_cpus=total_processes, storage=settings.RAY_CACHE_PATH, _temp_dir=settings.RAY_CACHE_PATH)
+    ray.init(
+        num_cpus=total_processes,
+        storage=settings.RAY_CACHE_PATH,
+        _temp_dir=settings.RAY_CACHE_PATH,
+        dashboard_host=settings.RAY_DASHBOARD_HOST
+    )
 
-    model = SentenceTransformer("thenlper/gte-small")
+    model = SentenceTransformer("TaylorAI/gte-tiny")
     model_ref = ray.put(model)
 
     print(f"Generating {len(topics)} course batches with {total_processes} processes from filename(s) {in_files}")
     futures = [func.remote(model_ref, batch, args) for batch in topics]
 
+    # Run all ray tasks
     courses = []
-    for x in tqdm(to_iterator(futures), total=len(futures)):
-        courses.append(x)
+    progress_bar = tqdm(total=len(futures))
+    while len(futures) > 0:
+        finished, futures = ray.wait(
+            futures, timeout=7.0
+        )
+        course = ray.get(finished)
+        courses.extend(course)
+        progress_bar.update(len(course))
 
     if settings.THREADS_PER_WORKER > 1:
         # Flatten courses list

@@ -24,12 +24,14 @@ def render_components_to_output_markdown(
                     )
                 )
             case ComponentNames.section:
-                if not component.markdown.startswith("#"):
-                    component.markdown = f"# {component.markdown}"
-                tuples.append((component.type, component.markdown))
+                markdown_data = component.markdown.strip()
+                if not markdown_data.startswith("#"):
+                    markdown_data = f"# {markdown_data}"
+                tuples.append((component.type, markdown_data))
             case ComponentNames.text:
+                markdown_data = component.markdown.strip()
                 tuples.append(
-                    (component.type, remove_section_paragraphs(component.markdown))
+                    (component.type, remove_section_paragraphs(markdown_data))
                 )
             case _:
                 tuples.append((component.type, component.markdown))
@@ -50,4 +52,6 @@ def remove_section_paragraphs(text):
             paragraphs.pop()
 
     # Reconstruct the text from the remaining paragraphs
-    return "\n".join(paragraphs).strip()
+    replaced = "\n".join(paragraphs).strip()
+    replaced = re.sub(r"\n\n+", "\n\n", replaced)
+    return replaced

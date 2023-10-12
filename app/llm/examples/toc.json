@@ -1,0 +1,45 @@
+[
+  {
+    "topic": "Python Programming for Beginners",
+    "draft_outline": "Introduction\n*What is Programming? *Why Python? *Historical Background of Python *Applications of Python Setting Up the Environment\n     *Installing Python *Interactive Shell vs. Script Mode *Setting Up an IDE (e.g., PyCharm, VSCode)",
+    "json": {
+      "outline": [
+        "1. Python Programming for Beginners",
+        "1.1. What is Programming?",
+        "1.2. Why Python?",
+        "1.3. Historical Background of Python",
+        "1.4. Applications of Python",
+        "2. Setting Up the Environment",
+        "2.1. Installing Python",
+        "2.2. Interactive Shell vs. Script Mode",
+        "2.3. Setting Up an IDE (e.g., PyCharm, VSCode)"
+      ],
+      "queries": [
+        "Python programming beginner guide",
+        "Python programming introduction book"
+      ]
+    }
+  },
+  {
+    "topic": "PLZ/SYS Programming Language Manual",
+    "draft_outline": "1. Introduction.- 1.1 PLZ/SYS objectives.- 2. Summary Of The Language.- 2.1 Data and Statements.- 2.2 The Construction of a Program.- 3. Notation, Terminology, And Vocabulary.- 3.1 Vocabulary.- 3.2 Lexical Structure.- 4. Identifiers And Literal Constants.- PLZ/SYS Grammar. Conclusion. References.",
+    "json": {
+      "outline": [
+        "1. Introduction",
+        "1.1 PLZ/SYS objectives",
+        "2. Summary Of The Language",
+        "2.1 Data and Statements",
+        "2.2 The Construction of a Program",
+        "3. Notation, Terminology, And Vocabulary",
+        "3.1 Vocabulary",
+        "3.2 Lexical Structure",
+        "4. Identifiers And Literal Constants",
+        "5. PLZ/SYS Grammar"
+      ],
+      "queries": [
+        "PLZ/SYS programming language overview",
+        "Best practices for Structured Statements in programming"
+      ]
+    }
+  }
+]

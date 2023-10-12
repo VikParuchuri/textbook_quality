@@ -30,7 +30,8 @@ async def oai_chat_wrapped(
     history: List,
     temperature: float,
     max_tokens: int,
-    stop_tokens: Optional[List] = None,
+    inner_timeout: int = settings.LLM_TIMEOUT,
+    stop_sequences: Optional[List] = None,
     model: str = settings.LLM_TYPE,
 ) -> AsyncGenerator[str, None]:
     response = await openai.ChatCompletion.acreate(
@@ -39,8 +40,9 @@ async def oai_chat_wrapped(
         temperature=temperature,
         max_tokens=max_tokens,
         n=1,
-        stop=stop_tokens,
+        stop=stop_sequences,
         stream=True,
+        request_timeout=inner_timeout,
     )
     async for chunk in response:
         stream = chunk
@@ -54,7 +56,8 @@ async def oai_prompt_wrapped(
     prompt: str,
     temperature: float,
     max_tokens: int,
-    stop_tokens: Optional[List] = None,
+    inner_timeout: int = settings.LLM_TIMEOUT,
+    stop_sequences: Optional[List] = None,
     model: str = settings.LLM_TYPE,
 ) -> AsyncGenerator[str, None]:
     response = await openai.Completion.acreate(
@@ -63,8 +66,9 @@ async def oai_prompt_wrapped(
         temperature=temperature,
         max_tokens=max_tokens,
         n=1,
-        stop=stop_tokens,
+        stop=stop_sequences,
         stream=True,
+        request_timeout=inner_timeout,
     )
     async for chunk in response:
         stream = chunk
@@ -78,7 +82,7 @@ async def oai_prompt_response(
     temperature: float = settings.LLM_TEMPERATURE,
     timeout: int = settings.LLM_TIMEOUT,
     max_tokens: int = settings.LLM_MAX_RESPONSE_TOKENS,
-    stop_tokens=None,
+    stop_sequences=None,
     model: str = settings.LLM_TYPE,
 ) -> Optional[AsyncGenerator[LLMResponse, None]]:
     response_tokens = 0
@@ -88,7 +92,8 @@ async def oai_prompt_response(
             temperature,
             max_tokens,
             timeout=timeout,
-            stop_tokens=stop_tokens,
+            inner_timeout=timeout,
+            stop_sequences=stop_sequences,
             model=model,
         )
         async for chunk in response:
@@ -113,7 +118,7 @@ async def oai_chat_response(
     timeout: int = settings.LLM_TIMEOUT,
     max_tokens: int = settings.LLM_MAX_RESPONSE_TOKENS,
     history=None,
-    stop_tokens=None,
+    stop_sequences=None,
     model: str = settings.LLM_TYPE,
 ) -> Optional[AsyncGenerator[LLMResponse, None]]:
     current_message = {"role": "user", "content": prompt}
@@ -130,7 +135,8 @@ async def oai_chat_response(
             temperature,
             max_tokens,
             timeout=timeout,
-            stop_tokens=stop_tokens,
+            inner_timeout=timeout,
+            stop_sequences=stop_sequences,
             model=model,
         )
         async for chunk in response:

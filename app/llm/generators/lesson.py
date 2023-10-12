@@ -8,12 +8,12 @@ from app.course.schemas import ResearchNote
 from app.llm.llm import GenerationSettings, generate_response
 from app.llm.prompts import build_prompt
 from app.settings import settings
+from copy import deepcopy
 
 lesson_settings = GenerationSettings(
     temperature=0.4,
     max_tokens=6000,
-    timeout=240,
-    stop_tokens=None,
+    timeout=1200,
     prompt_type="lesson",
 )
 
@@ -36,8 +36,6 @@ def lesson_prompt(
 ) -> str:
     with open(os.path.join(settings.EXAMPLE_JSON_DIR, "lesson.json")) as f:
         examples = json.load(f)
-
-    rendered_outline = "\n".join(outline).strip()
 
     # Set default components if none are provided
     if not components:
@@ -66,6 +64,21 @@ def lesson_prompt(
     component_extras = [COMPONENT_EXTRAS.get(c, None) for c in components]
     component_extras = [c for c in component_extras if c is not None]
 
+    sections_to_author = len(outline) - current_section_index
+    outline_items_to_author = outline[
+        current_section_index: current_section_index + sections_to_author
+    ]
+    outline_items_to_author_str = ",".join(outline_items_to_author)
+    outline_stop_item = outline_items_to_author[-1]
+
+    selected_outline = deepcopy(outline)
+    if len(outline) > settings.SECTIONS_PER_LESSON:
+        surround = min(settings.SECTIONS_PER_LESSON // 2, 10)
+        start_item = max(current_section_index - surround, 0)
+        end_item = min(current_section_index + sections_to_author + surround, len(outline))
+        selected_outline = selected_outline[start_item:end_item]
+
+    rendered_outline = "\n".join(selected_outline).strip()
     items = [
         ("Table of contents\n", rendered_outline),
     ]
@@ -82,13 +95,6 @@ def lesson_prompt(
     items.append(("course\n\n", current_section))
 
     input = OrderedDict(items)
-
-    sections_to_author = len(outline) - current_section_index
-    outline_items_to_author = outline[
-        current_section_index: current_section_index + sections_to_author
-    ]
-    outline_items_to_author_str = ",".join(outline_items_to_author)
-    outline_stop_item = outline_items_to_author[-1]
 
     section_str = "section" if sections_to_author == 1 else "sections"
 
@@ -121,6 +127,7 @@ async def generate_lessons(
     include_examples: bool = True,
     update_after_chars: int = 500,
     cache: bool = True,
+    stop_section: str | None = None,
 ) -> AsyncGenerator[str, None]:
     prompt = lesson_prompt(
         outline,
@@ -133,7 +140,11 @@ async def generate_lessons(
     )
 
     text = ""
-    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision)
+    stop_sequences = None
+    if stop_section is not None:
+        stop_sequences = [stop_section]
+
+    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision, stop_sequences=stop_sequences)
     chunk_len = 0
 
     # Yield text in batches, to avoid creating too many DB models
