@@ -56,20 +56,6 @@ def parse_json_data(outline: dict) -> GeneratedOutlineData:
     return outline
 
 
-def try_parse_json(text: str) -> dict | None:
-    data = None
-    try:
-        data = json.loads(text.strip())
-    except json.decoder.JSONDecodeError:
-        # Try to re-parse if it failed
-        try:
-            data = json.loads(text.strip() + '"]}')
-        except json.decoder.JSONDecodeError:
-            # If it fails again, keep going with the loop.
-            pass
-    return data
-
-
 local_data = threading.local()
 
 
@@ -93,10 +79,9 @@ async def generate_outline(
     topic: str,
     concepts: List[str],
     revision: int,
-    update_after_chars: int = 50,
     item_count: int = 10,
     include_examples: bool = True
-) -> AsyncGenerator[GeneratedOutlineData, None]:
+) -> GeneratedOutlineData:
     # Sort concepts alphabetically so that the prompt is the same every time
     concepts = sorted(concepts)
     prompt = outline_prompt(topic, concepts, item_count=item_count, include_examples=include_examples)
@@ -105,19 +90,8 @@ async def generate_outline(
         text = prompt_start_hint
     # Do not hit cache on retries
     should_cache = not getattr(local_data, "is_retry", False)
-    response = generate_response(prompt, outline_settings, cache=should_cache, revision=revision)
+    text += await generate_response(prompt, outline_settings, cache=should_cache, revision=revision)
 
-    chunk_len = 0
-    async for chunk in response:
-        text += chunk
-        chunk_len += len(chunk)
-        if chunk_len >= update_after_chars:
-            data = try_parse_json(text.strip())
-            if data:
-                yield parse_json_data(data)
-            chunk_len = 0
-
-    # Handle the last bit of data
     try:
         # Strip out text before/after the json.  Sometimes the LLM will include something before the json input.
         text = extract_only_json_dict(text)
@@ -125,7 +99,7 @@ async def generate_outline(
         data = json.loads(text.strip())
     except JSONDecodeError as e:
         raise GenerationError(e)
-    yield parse_json_data(data)
+    return parse_json_data(data)
 
 
 def renumber_outline(outline):

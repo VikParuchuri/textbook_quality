@@ -35,12 +35,9 @@ async def create_course_outline(
     outline_list = None
     queries = None
     try:
-        response = generate_outline(course_name, concepts, revision, item_count=outline_items, include_examples=settings.INCLUDE_EXAMPLES)
-
-        # Stream outline as it generates
-        async for outline_data in response:
-            outline_list = outline_data.outline
-            queries = outline_data.queries
+        outline_data = await generate_outline(course_name, concepts, revision, item_count=outline_items, include_examples=settings.INCLUDE_EXAMPLES)
+        outline_list = outline_data.outline
+        queries = outline_data.queries
     except (GenerationError, RateLimitError, InvalidRequestError, RetryError) as e:
         debug_print_trace()
         print(f"Error generating outline for {course_name}")

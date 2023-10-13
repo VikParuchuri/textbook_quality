@@ -31,10 +31,7 @@ async def generate_topic(
     book_title: str,
 ) -> List[str]:
     prompt = topic_prompt(book_title)
-    text = ""
-    response = generate_response(prompt, topic_settings)
-    async for chunk in response:
-        text += chunk
+    text = await generate_response(prompt, topic_settings)
     try:
         text = extract_only_json_list(text)
         data = json.loads(text.strip())
@@ -58,10 +55,7 @@ async def generate_specific_topic(
     domain: Optional[str] = None,
 ) -> List[str]:
     prompt = topic_specific_prompt(book_title, domain)
-    text = ""
-    response = generate_response(prompt, topic_settings)
-    async for chunk in response:
-        text += chunk
+    text = await generate_response(prompt, topic_settings)
 
     try:
         text = extract_only_json_list(text)

@@ -44,7 +44,6 @@ def toc_prompt(topic: str, toc: str, include_examples=True) -> str:
 
 async def generate_tocs(topic: str, draft_toc: str, include_examples: bool = True) -> GeneratedTOC | None:
     prompt = toc_prompt(topic, draft_toc, include_examples=include_examples)
-    text = ""
 
     settings_inst = deepcopy(toc_settings)
     try:
@@ -52,9 +51,7 @@ async def generate_tocs(topic: str, draft_toc: str, include_examples: bool = Tru
     except Exception:
         return
 
-    response = generate_response(prompt, settings_inst)
-    async for chunk in response:
-        text += chunk
+    text = await generate_response(prompt, settings_inst)
     try:
         text = extract_only_json_dict(text)
         text = str(ftfy.fix_text(text))

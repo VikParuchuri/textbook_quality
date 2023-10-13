@@ -40,8 +40,9 @@ class PDFSearchResult(BaseModel):
     query: str
 
 
-async def search_pdfs(queries: List[str], max_count=3) -> List[PDFSearchResult]:
-    coroutines = [search_pdf(query, max_count) for query in queries]
+async def search_pdfs(queries: List[str], max_queries=1, pdfs_per_query=5) -> List[PDFSearchResult]:
+    queries = queries[:max_queries]
+    coroutines = [search_pdf(query, pdfs_per_query) for query in queries]
 
     # Run queries sequentially
     results = []

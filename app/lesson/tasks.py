@@ -80,7 +80,7 @@ async def generate_lesson(
                     selected_research_notes.append(research_note)
 
         try:
-            response = generate_single_lesson_chunk(
+            new_components = await generate_single_lesson_chunk(
                 numbered_outline,
                 current_section,
                 generated_sections,
@@ -92,14 +92,6 @@ async def generate_lesson(
                 cache=use_cache,
                 stop_section=stop_section,
             )
-            new_components = []
-            new_component_keys = []
-            async for chunk in response:
-                new_components = chunk
-                # Set keys for the new components to the same as the ones in the last iteration
-                for i, key in enumerate(new_component_keys):
-                    new_components[i].key = key
-                new_component_keys = [c.key for c in new_components]
         except (GenerationError, RateLimitError, InvalidRequestError) as e:
             debug_print_trace()
             print(f"Error generating lesson: {e}")
@@ -145,8 +137,8 @@ async def generate_single_lesson_chunk(
     include_examples: bool,
     cache: bool,
     stop_section: str | None = None,
-) -> AsyncGenerator[List[AllLessonComponentData], None]:
-    response = generate_lessons(
+) -> List[AllLessonComponentData]:
+    chunk = await generate_lessons(
         numbered_outline,
         current_section,
         current_section_index,
@@ -161,10 +153,21 @@ async def generate_single_lesson_chunk(
 
     section_start = f"---{ComponentNames.section}"
 
-    async for chunk in response:
+    # Remove the final section header from the chunk
+    # This happens when we hit the stop token
+    chunk = chunk.strip()
+    # Remove the section header from the chunk
+    if chunk.endswith(section_start):
+        chunk = chunk[:-len(section_start)]
+
+    if stop_section and chunk.endswith(stop_section):
+        chunk = chunk[:-len(stop_section)]
+
+    chunk = chunk.strip()
+
+    new_components = parse_lesson_markdown(chunk)
+    if len(new_components) > 1 and new_components[-1].type == ComponentNames.section:
         # Remove the final section header from the chunk
-        # This happens when we hit the stop token
-        if chunk.strip().endswith(section_start):
-            chunk = chunk.strip()[:-len(section_start)]
-        new_components = parse_lesson_markdown(chunk)
-        yield new_components
+        new_components = new_components[:-1]
+
+    return new_components
