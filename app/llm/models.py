@@ -11,6 +11,7 @@ class PromptTypes(str, BaseEnum):
     topic = "topic"
     title = "title"
     toc = "toc"
+    rewrite = "rewrite"
 
 
 class Prompt(BaseDBModel, table=True):

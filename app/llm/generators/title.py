@@ -30,10 +30,7 @@ async def generate_title(
     subject: str,
 ) -> List[str]:
     prompt = title_prompt(subject)
-    text = ""
-    response = generate_response(prompt, title_settings, cache=False)
-    async for chunk in response:
-        text += chunk
+    text = await generate_response(prompt, title_settings, cache=False)
 
     try:
         text = extract_only_json_list(text)

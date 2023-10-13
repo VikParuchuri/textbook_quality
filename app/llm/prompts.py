@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from jinja2 import Environment, FileSystemLoader, Template
 
+from app.course.schemas import ResearchNote
 from app.settings import settings
 
 
@@ -64,3 +65,12 @@ def build_prompt(
     else:
         prompt = f"{instruction}\n\n{input_prompt}"
     return prompt
+
+
+def render_research_notes(research_notes: List[ResearchNote] | None) -> str:
+    research_content = ""
+    for research_note in research_notes:
+        content = research_note.content.replace("```", " ")
+        content = f"```{content}```"
+        research_content += f"* {content}\n"
+    return research_content

@@ -97,11 +97,13 @@ class EmbeddingContext:
         self.lengths = []
         self.text_data = []
         self.model = model
+        self.kinds = []
 
     def add_resources(self, resources):
         for resource in resources:
             self.content += resource.content
             self.lengths.append(len(self.content))
+            self.kinds.append(resource.kind)
 
             embeddings = create_embeddings(resource.content, self.model)
 
@@ -129,10 +131,8 @@ class EmbeddingContext:
                     text_data = self.text_data[i]
                     result = ResearchNote(
                         content=self.content[index],
-                        title=text_data.title,
-                        link=text_data.link,
-                        description=text_data.description,
-                        outline_items=[k for k in item_mapping.keys() if item_mapping[k] == index]
+                        outline_items=[k for k in item_mapping.keys() if item_mapping[k] == index],
+                        kind=self.kinds[i]
                     )
                     results.append(result)
                     break

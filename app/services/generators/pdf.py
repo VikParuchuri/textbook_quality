@@ -16,11 +16,9 @@ from app.services.dependencies import get_stored_urls
 from app.services.exceptions import ProcessingError
 from app.services.models import store_scraped_data
 from app.services.network import download_and_save
-from app.services.schemas import PDFData, ServiceInfo, ServiceNames
+from app.services.schemas import SearchData, ServiceInfo, ServiceNames
 from app.services.service import get_service_response
 from app.settings import settings
-
-BLOCK_SIZE = 2000  # Characters per text block
 
 SEARCH_SETTINGS = {
     "serply": serply_pdf_search_settings,
@@ -42,8 +40,9 @@ class PDFSearchResult(BaseModel):
     query: str
 
 
-async def search_pdfs(queries: List[str], max_count=3) -> List[PDFSearchResult]:
-    coroutines = [search_pdf(query, max_count) for query in queries]
+async def search_pdfs(queries: List[str], max_queries=1, pdfs_per_query=5) -> List[PDFSearchResult]:
+    queries = queries[:max_queries]
+    coroutines = [search_pdf(query, pdfs_per_query) for query in queries]
 
     # Run queries sequentially
     results = []
@@ -103,7 +102,7 @@ async def search_pdf(query: str, max_count) -> List[PDFSearchResult]:
 
 async def download_and_parse_pdfs(
     search_results: List[PDFSearchResult],
-) -> List[PDFData]:
+) -> List[SearchData]:
     # Deduplicate links
     deduped_search_results = []
     seen_links = set()
@@ -130,7 +129,7 @@ async def download_and_parse_pdfs(
     return results
 
 
-async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optional[str]) -> Optional[PDFData]:
+async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optional[str]) -> Optional[SearchData]:
     stored = False
     if pdf_path:
         with open(os.path.join(settings.PDF_CACHE_DIR, pdf_path), "rb") as f:
@@ -153,14 +152,14 @@ async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optio
     except FileDataError:
         return
 
-    pdf_cls = PDFData(
+    pdf_cls = SearchData(
         pdf_path=pdf_path,
         link=search_result.link,
         title=search_result.title,
-        description=search_result.description,
         content=pdf_content,
         query=search_result.query,
         stored=stored,
+        kind="pdf"
     )
 
     # Bail out if we don't have enough text or blocks in our pdf
@@ -172,6 +171,41 @@ async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optio
         return
 
     return pdf_cls
+
+
+def smart_split(s, max_remove=settings.CONTEXT_BLOCK_SIZE // 4):
+    # Split into chunks based on actual word boundaries
+    s_len = len(s)
+
+    # Don't remove anything if string is too short
+    if max_remove > s_len:
+        return s, ""
+
+    delimiter = None
+    max_len = 0
+
+    for split_delimiter in ["\n\n", ". ", "! ", "? ", "}\n", ":\n", ")\n", ".\n", "!\n", "?\n"]:
+        split_str = s.rsplit(split_delimiter, 1)
+        if len(split_str) > 1 and len(split_str[0]) > max_len:
+            max_len = len(split_str[0])
+            delimiter = split_delimiter
+
+    if delimiter is not None and max_len > s_len - max_remove:
+        return s.rsplit(delimiter, 1)
+
+    # Try \n as a last resort
+    str_split = s.rsplit("\n", 1)
+    if len(split_str) > 1 and len(split_str[0]) > max_len:
+        max_len = len(str_split[0])
+        delimiter = "\n"
+
+    if delimiter is None:
+        return s, ""
+
+    if max_len < s_len - max_remove:
+        return s, ""
+
+    return s.rsplit(delimiter, 1)
 
 
 def parse_pdf(data) -> List[str]:
@@ -196,8 +230,8 @@ def parse_pdf(data) -> List[str]:
     block = ""
     for i, b in enumerate(blocks):
         block += b[4]
-        if len(block) > BLOCK_SIZE:
-            parsed_blocks.append(block)
-            block = ""
+        if len(block) > settings.CONTEXT_BLOCK_SIZE:
+            parsed_block, block = smart_split(block)
+            parsed_blocks.append(parsed_block)
     parsed_blocks.append(block)
     return parsed_blocks

@@ -97,7 +97,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
             # Up to one retrieved passage per outline item
             # Remove numbers from outline for use in retrieval
             context_outline = [item.split(" ", 1)[-1] for item in outline]
-            context = await query_course_context(model, queries, context_outline)
+            context = await query_course_context(model, queries, context_outline, course_name)
         except Exception as e:
             debug_print_trace()
             print(f"Error generating context for {course_name}: {e}")

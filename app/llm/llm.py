@@ -27,7 +27,7 @@ async def generate_response(
     cache: bool = True,
     revision: int = 1,
     stop_sequences: Optional[List[str]] = None,
-) -> AsyncGenerator[str, None]:
+) -> str:
     temperature = prompt_settings.temperature
     max_tokens = prompt_settings.max_tokens
     timeout = prompt_settings.timeout
@@ -65,10 +65,8 @@ async def generate_response(
         )
         prompt_model = query.first()
 
-
     if prompt_model is not None and cache:
-        yield prompt_model.response
-        return
+        return prompt_model.response
 
     orig_model = model
     for i in range(max_tries):
@@ -156,12 +154,11 @@ async def generate_response(
     full_text = ""
     async for chunk in response:
         text = chunk.text
-        yield text
         full_text += text
 
     # Skip caching
     if not cache:
-        return
+        return full_text
 
     async with get_session() as db:
         try:
@@ -177,3 +174,5 @@ async def generate_response(
             await db.commit()
         except IntegrityError:
             await db.rollback()
+
+    return full_text

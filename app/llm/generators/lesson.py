@@ -6,7 +6,7 @@ from typing import AsyncGenerator, List, get_args
 from app.components.schemas import ComponentNames
 from app.course.schemas import ResearchNote
 from app.llm.llm import GenerationSettings, generate_response
-from app.llm.prompts import build_prompt
+from app.llm.prompts import build_prompt, render_research_notes
 from app.settings import settings
 from copy import deepcopy
 
@@ -85,11 +85,7 @@ def lesson_prompt(
 
     research_notes_exist = research_notes is not None and len(research_notes) > 0
     if research_notes_exist:
-        research_content = ""
-        for research_note in research_notes:
-            content = research_note.content.replace("```", " ")
-            content = f"```{content}```"
-            research_content += f"* {content}\n"
+        research_content = render_research_notes(research_notes)
         items.append(("research notes\n", research_content))
 
     items.append(("course\n\n", current_section))
@@ -125,10 +121,9 @@ async def generate_lessons(
     revision: int,
     research_notes: List[ResearchNote] | None = None,
     include_examples: bool = True,
-    update_after_chars: int = 500,
     cache: bool = True,
     stop_section: str | None = None,
-) -> AsyncGenerator[str, None]:
+) -> str:
     prompt = lesson_prompt(
         outline,
         current_section,
@@ -139,20 +134,10 @@ async def generate_lessons(
         research_notes,
     )
 
-    text = ""
     stop_sequences = None
     if stop_section is not None:
         stop_sequences = [stop_section]
 
-    response = generate_response(prompt, lesson_settings, cache=cache, revision=revision, stop_sequences=stop_sequences)
-    chunk_len = 0
+    text = await generate_response(prompt, lesson_settings, cache=cache, revision=revision, stop_sequences=stop_sequences)
 
-    # Yield text in batches, to avoid creating too many DB models
-    async for chunk in response:
-        text += chunk
-        chunk_len += len(chunk)
-        if chunk_len >= update_after_chars:
-            yield text
-            chunk_len = 0
-    # Yield the remaining text
-    yield text
+    return text

@@ -8,6 +8,7 @@ from app.util import BaseEnum
 class ServiceNames(str, BaseEnum):
     serply = "serply"
     serpapi = "serpapi"
+    custom = "custom"
 
 
 class ServiceSettings(BaseModel):
@@ -20,12 +21,11 @@ class ServiceInfo(BaseModel):
     content: Optional[str] = None
 
 
-class PDFData(BaseModel):
-    pdf_path: str
-    link: str
-    text_link: str | None = None
-    title: str
-    description: str
+class SearchData(BaseModel):
     content: List[str]
-    query: str | None = None
+    query: str
     stored: bool = False
+    pdf_path: Optional[str] = None
+    link: Optional[str] = None
+    title: Optional[str] = None
+    kind: str
