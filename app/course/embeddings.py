@@ -129,9 +129,6 @@ class EmbeddingContext:
                     text_data = self.text_data[i]
                     result = ResearchNote(
                         content=self.content[index],
-                        title=text_data.title,
-                        link=text_data.link,
-                        description=text_data.description,
                         outline_items=[k for k in item_mapping.keys() if item_mapping[k] == index]
                     )
                     results.append(result)

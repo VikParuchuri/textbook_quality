@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Literal, Optional, List
 
 from dotenv import find_dotenv
 from pydantic import BaseSettings
@@ -53,12 +53,17 @@ class Settings(BaseSettings):
     SERPLY_KEY: str = ""
     SERPAPI_KEY: str = ""
     SEARCH_BACKEND: Optional[str] = "serply"
+    CUSTOM_SEARCH_SERVER: Optional[str] = None
+    CUSTOM_SEARCH_USER: Optional[str] = None
+    CUSTOM_SEARCH_PASSWORD: Optional[str] = None
+    CUSTOM_SEARCH_TYPES: Optional[List[str]] = ["wiki"]
+    CONTEXT_BLOCK_SIZE: int = 2200  # Characters per text block
 
     # General
     THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
     RAY_DASHBOARD_HOST: str = "0.0.0.0"
-    RAY_CORES_PER_WORKER = .5 # How many cpu cores to allocate per worker
+    RAY_CORES_PER_WORKER = 1 # How many cpu cores to allocate per worker
 
     class Config:
         env_file = find_dotenv("local.env")
