@@ -72,4 +72,5 @@ async def query_course_context(
     embedding_context.add_resources(pdf_data)
 
     results = embedding_context.query(outline_items)
+
     return results

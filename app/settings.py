@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # General
     THREADS_PER_WORKER: int = 1 # How many threads to use per worker process to save RAM
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
-    RAY_DASHBOARD_HOST: str = "0.0.0.0"
+    RAY_DASHBOARD_HOST: str = "127.0.0.1"
     RAY_CORES_PER_WORKER = 1 # How many cpu cores to allocate per worker
 
     class Config:

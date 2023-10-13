@@ -3,6 +3,7 @@ from typing import List
 
 from pydantic import BaseModel
 
+from app.services.exceptions import ResponseError, RequestError
 from app.services.schemas import ServiceInfo, SearchData
 from app.services.service import get_service_response
 from app.settings import settings
@@ -31,7 +32,10 @@ async def _search_wiki(query):
         return []
 
     service_info = ServiceInfo(query=query)
-    response = await get_service_response(wiki_search_settings, service_info, cache=False)
+    try:
+        response = await get_service_response(wiki_search_settings, service_info, cache=False)
+    except (RequestError, ResponseError):
+        return []
 
     content = []
     curr_block = ""
@@ -44,4 +48,4 @@ async def _search_wiki(query):
     if curr_block:
         content.append(curr_block.strip())
 
-    return SearchData(content=content, query=query)
+    return SearchData(content=content, query=query, kind="wiki")

@@ -158,6 +158,7 @@ async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optio
         content=pdf_content,
         query=search_result.query,
         stored=stored,
+        kind="pdf"
     )
 
     # Bail out if we don't have enough text or blocks in our pdf

@@ -28,3 +28,4 @@ class SearchData(BaseModel):
     pdf_path: Optional[str] = None
     link: Optional[str] = None
     title: Optional[str] = None
+    kind: str
