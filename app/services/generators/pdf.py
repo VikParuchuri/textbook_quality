@@ -19,6 +19,7 @@ from app.services.network import download_and_save
 from app.services.schemas import SearchData, ServiceInfo, ServiceNames
 from app.services.service import get_service_response
 from app.settings import settings
+from app.util import smart_split
 
 SEARCH_SETTINGS = {
     "serply": serply_pdf_search_settings,
@@ -171,41 +172,6 @@ async def download_and_parse_pdf(search_result: PDFSearchResult, pdf_path: Optio
         return
 
     return pdf_cls
-
-
-def smart_split(s, max_remove=settings.CONTEXT_BLOCK_SIZE // 4):
-    # Split into chunks based on actual word boundaries
-    s_len = len(s)
-
-    # Don't remove anything if string is too short
-    if max_remove > s_len:
-        return s, ""
-
-    delimiter = None
-    max_len = 0
-
-    for split_delimiter in ["\n\n", ". ", "! ", "? ", "}\n", ":\n", ")\n", ".\n", "!\n", "?\n"]:
-        split_str = s.rsplit(split_delimiter, 1)
-        if len(split_str) > 1 and len(split_str[0]) > max_len:
-            max_len = len(split_str[0])
-            delimiter = split_delimiter
-
-    if delimiter is not None and max_len > s_len - max_remove:
-        return s.rsplit(delimiter, 1)
-
-    # Try \n as a last resort
-    str_split = s.rsplit("\n", 1)
-    if len(split_str) > 1 and len(split_str[0]) > max_len:
-        max_len = len(str_split[0])
-        delimiter = "\n"
-
-    if delimiter is None:
-        return s, ""
-
-    if max_len < s_len - max_remove:
-        return s, ""
-
-    return s.rsplit(delimiter, 1)
 
 
 def parse_pdf(data) -> List[str]:

@@ -46,16 +46,19 @@ async def create_course_outline(
 
 
 async def query_course_context(
-    model, queries: List[str], outline_items: List[str], course_name: str
+    model, queries: List[str], outline_items: List[str], course_name: str, do_search=settings.SEARCH_BACKEND is not None
 ) -> List[ResearchNote] | None:
     # Store the pdf data in the database
     # These are general background queries
-    pdf_results = await search_pdfs(queries)
-    pdf_data = await download_and_parse_pdfs(pdf_results)
+    if do_search:
+        pdf_results = await search_pdfs(queries)
+        pdf_data = await download_and_parse_pdfs(pdf_results)
+    else:
+        pdf_data = []
 
     # Make queries for each chapter and subsection, but not below that level
     # These are specific queries related closely to the content
-    specific_queries = [f"{course_name}: {o}" for o in outline_items if o.count(".") < 3]
+    specific_queries = [f"{o}: {course_name}" for o in outline_items if o.count(".") < 3]
     if settings.CUSTOM_SEARCH_SERVER:
         if "wiki" in settings.CUSTOM_SEARCH_TYPES:
             wiki_results = await search_wiki(specific_queries)

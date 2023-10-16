@@ -54,8 +54,7 @@ class Settings(BaseSettings):
     SERPAPI_KEY: str = ""
     SEARCH_BACKEND: Optional[str] = "serply"
     CUSTOM_SEARCH_SERVER: Optional[str] = None
-    CUSTOM_SEARCH_USER: Optional[str] = None
-    CUSTOM_SEARCH_PASSWORD: Optional[str] = None
+    CUSTOM_SEARCH_TOKEN: Optional[str] = None
     CUSTOM_SEARCH_TYPES: Optional[List[str]] = ["wiki"]
     CONTEXT_BLOCK_SIZE: int = 2200  # Characters per text block
 

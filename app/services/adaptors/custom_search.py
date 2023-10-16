@@ -1,5 +1,6 @@
 import urllib.parse
 from json import JSONDecodeError
+from typing import List
 
 import aiohttp
 
@@ -14,25 +15,27 @@ async def custom_search_router(service_settings: ServiceSettings, service_info: 
     match service_settings.type:
         case "wiki":
             response = await run_search(
-                service_info.query, "search", extract_field="match"
+                service_info.queries, "search", extract_field="match"
             )
         case _:
             raise RequestError(f"Unknown external search service type {service_settings.type}")
     return response
 
 
-async def run_search(query: str, endpoint: str, extract_field: str = None):
+async def run_search(queries: List[str], endpoint: str, extract_field: str = None):
     if not settings.CUSTOM_SEARCH_SERVER:
         raise RequestError(f"Custom search server not configured")
 
-    params = {"query": query}
-    auth = aiohttp.BasicAuth(settings.CUSTOM_SEARCH_USER, settings.CUSTOM_SEARCH_PASSWORD)
+    params = {"queries": queries}
+    headers = {
+        'Authorization': f'Bearer {settings.CUSTOM_SEARCH_TOKEN}',
+    }
 
     request_url = f"{settings.CUSTOM_SEARCH_SERVER}/{endpoint}"
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(request_url, params=params, auth=auth) as response:
+            async with session.get(request_url, params=params, headers=headers) as response:
                 json = await response.json()
     except aiohttp.ClientResponseError as e:
         raise RequestError(f"Custom search request failed with status {e.status}")

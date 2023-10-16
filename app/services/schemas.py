@@ -17,8 +17,10 @@ class ServiceSettings(BaseModel):
 
 
 class ServiceInfo(BaseModel):
+    # Set either query or queries, depending on endpoint batching
     query: Optional[str] = None
     content: Optional[str] = None
+    queries: Optional[List[str]] = None
 
 
 class SearchData(BaseModel):
