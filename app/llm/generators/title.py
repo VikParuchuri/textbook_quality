@@ -28,9 +28,10 @@ def title_prompt(subject: str) -> str:
 
 async def generate_title(
     subject: str,
+    cache: bool = False
 ) -> List[str]:
     prompt = title_prompt(subject)
-    text = await generate_response(prompt, title_settings, cache=False)
+    text = await generate_response(prompt, title_settings, cache=cache)
 
     try:
         text = extract_only_json_list(text)

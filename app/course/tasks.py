@@ -3,6 +3,7 @@ from typing import List
 from tenacity import RetryError
 
 from app.course.embeddings import EmbeddingContext
+from app.course.local_doc import chunk_documents
 from app.course.schemas import ResearchNote
 from app.llm.exceptions import GenerationError, InvalidRequestError, RateLimitError
 from app.llm.generators.concepts import generate_concepts
@@ -46,7 +47,12 @@ async def create_course_outline(
 
 
 async def query_course_context(
-    model, queries: List[str], outline_items: List[str], course_name: str, do_search=settings.SEARCH_BACKEND is not None
+    model,
+    queries: List[str],
+    outline_items: List[str],
+    course_name: str,
+    do_search=settings.SEARCH_BACKEND is not None,
+    documents: List[str] | None = None # Custom embedding documents
 ) -> List[ResearchNote] | None:
     # Store the pdf data in the database
     # These are general background queries
@@ -63,6 +69,9 @@ async def query_course_context(
         if "wiki" in settings.CUSTOM_SEARCH_TYPES:
             wiki_results = await search_wiki(specific_queries)
             pdf_data += wiki_results
+
+    if documents:
+        pdf_data += chunk_documents(documents)
 
     # If there are no resources, don't generate research notes
     if len(pdf_data) == 0:

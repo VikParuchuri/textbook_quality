@@ -56,11 +56,13 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
 
     outline = None
     queries = None
+    documents = None
     concepts = []
     if isinstance(course_data, dict):
         course_name = course_data["topic"]
-        outline = course_data["outline"]
-        queries = course_data["queries"]
+        outline = course_data.get("outline")
+        queries = course_data.get("queries")
+        documents = course_data.get("documents") # Optional field for custom embedding document
     else:
         course_name = course_data
 
@@ -97,7 +99,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
             # Up to one retrieved passage per outline item
             # Remove numbers from outline for use in retrieval
             context_outline = [item.split(" ", 1)[-1] for item in outline]
-            context = await query_course_context(model, queries, context_outline, course_name)
+            context = await query_course_context(model, queries, context_outline, course_name, documents=documents)
         except Exception as e:
             debug_print_trace()
             print(f"Error generating context for {course_name}: {e}")
@@ -155,17 +157,25 @@ def process_course(model, course, args):
         print(f"Unhandled error generating course: {e}")
 
 
-def load_topics(in_file: str):
+def load_topics(in_file: str, max: int | None = None):
+    topics = []
     with open(os.path.join(settings.DATA_DIR, in_file)) as f:
         if in_file.endswith(".json"):
             topics = json.load(f)
         elif in_file.endswith(".jsonl"):
             lines = list(f)
-            topics = []
+            if max:
+                lines = lines[:max]
             for line in lines:
-                topics.append(json.loads(line))
+                try:
+                    topics.append(json.loads(line))
+                except Exception:
+                    print(f"Malformed json line in file")
         else:
             raise Exception(f"Unknown file type for {in_file}")
+
+    if max:
+        topics = topics[:max]
 
     random.seed(1)
     random.shuffle(topics)
@@ -189,11 +199,12 @@ if __name__ == "__main__":
     # Also shuffle randomly (with a seed)
     topics = []
     in_files = args.in_file.split(",")
-    for in_file in in_files:
-        topics += load_topics(in_file.strip())
+    max_courses = None
+    if args.max:
+        max_courses = args.max // len(in_files)
 
-    if args.max is not None:
-        topics = topics[:args.max]
+    for in_file in in_files:
+        topics += load_topics(in_file.strip(), max_courses)
 
     # Everything is cached, so exact duplicates will result in the same output
     topics = exact_deduplicate(topics)
