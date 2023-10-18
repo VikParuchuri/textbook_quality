@@ -53,6 +53,7 @@ async def generate_tocs(topic: str, draft_toc: str, include_examples: bool = Tru
 
     text = await generate_response(prompt, settings_inst)
     try:
+        text = text.replace("\n", " ").strip()
         text = extract_only_json_dict(text)
         text = str(ftfy.fix_text(text))
         data = json.loads(text.strip())

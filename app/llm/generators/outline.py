@@ -94,6 +94,7 @@ async def generate_outline(
 
     try:
         # Strip out text before/after the json.  Sometimes the LLM will include something before the json input.
+        text = text.replace("\n", " ").strip()
         text = extract_only_json_dict(text)
         text = str(ftfy.fix_text(text))
         data = json.loads(text.strip())

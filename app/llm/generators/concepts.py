@@ -64,6 +64,7 @@ async def generate_concepts(topic: str, revision: int, include_examples: bool = 
     should_cache = not getattr(local_data, "is_retry", False)
     text = await generate_response(prompt, concept_settings, cache=should_cache, revision=revision)
     try:
+        text = text.replace("\n", " ").strip()
         text = extract_only_json_dict(text)
         text = str(ftfy.fix_text(text))
         data = json.loads(text.strip())

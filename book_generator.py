@@ -1,8 +1,9 @@
 import math
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import argparse
 import asyncio
 
+from pyarrow._json import ReadOptions
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
@@ -140,15 +141,6 @@ async def _process_courses(model, courses, args):
 
 
 @ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
-def process_courses(model, courses, args):
-    try:
-        return asyncio.run(_process_courses(model, courses, args))
-    except Exception as e:
-        debug_print_trace()
-        print(f"Unhandled error generating courses: {e}")
-
-
-@ray.remote(num_cpus=settings.RAY_CORES_PER_WORKER)
 def process_course(model, course, args):
     try:
         return asyncio.run(_process_course(model, course, args))
@@ -157,30 +149,66 @@ def process_course(model, course, args):
         print(f"Unhandled error generating course: {e}")
 
 
-def load_topics(in_file: str, max: int | None = None):
-    topics = []
-    with open(os.path.join(settings.DATA_DIR, in_file)) as f:
-        if in_file.endswith(".json"):
+def load_json_topics(in_files: List[str], max: int | None = None):
+    loaded_topics = []
+    for in_file in in_files:
+        with open(in_file) as f:
             topics = json.load(f)
-        elif in_file.endswith(".jsonl"):
-            lines = list(f)
-            if max:
-                lines = lines[:max]
-            for line in lines:
+
+        if max:
+            topics = topics[:max]
+
+        random.seed(1)
+        random.shuffle(topics)
+        loaded_topics += topics
+
+    loaded_topics = exact_deduplicate(loaded_topics) # Deduplicate topic names
+    return loaded_topics
+
+
+def load_data_in_blocks(data_files: List[str], block_size: int, max_courses: int | None = None):
+    data_files = [os.path.join(settings.DATA_DIR, f) for f in data_files]
+    is_jsonl = data_files[0].endswith("jsonl")
+    if is_jsonl and len(data_files) > 1:
+        raise Exception("Can't load multiple jsonl files")
+
+    if is_jsonl:
+        with open(data_files[0]) as f:
+            block = []  # Initialize the block
+            lines_processed = 0
+            for line in f:  # Read the file line by line
                 try:
-                    topics.append(json.loads(line))
+                    block.append(json.loads(line.rstrip()))
+                    lines_processed += 1
                 except Exception:
                     print(f"Malformed json line in file")
-        else:
-            raise Exception(f"Unknown file type for {in_file}")
 
-    if max:
-        topics = topics[:max]
+                if max_courses and lines_processed >= max_courses:
+                    break
 
-    random.seed(1)
-    random.shuffle(topics)
+                if len(block) >= block_size:
+                    yield block
+                    block = []
+    else:
+        loaded_data = load_json_topics(data_files, max_courses)
+        for i in range(0, len(loaded_data), block_size):
+            yield loaded_data[i:i + block_size]
 
-    return topics
+
+def process_single_chunk(model_ref, topics, args):
+    futures = [process_course.remote(model_ref, course, args) for course in topics]
+
+    # Run all ray tasks
+    courses = []
+    progress_bar = tqdm(total=len(futures))
+    while len(futures) > 0:
+        finished, futures = ray.wait(
+            futures, timeout=7.0
+        )
+        course = ray.get(finished)
+        courses.extend(course)
+        progress_bar.update(len(course))
+    return courses
 
 
 if __name__ == "__main__":
@@ -197,27 +225,12 @@ if __name__ == "__main__":
 
     # Load in topics, limit to max if needed
     # Also shuffle randomly (with a seed)
-    topics = []
     in_files = args.in_file.split(",")
     max_courses = None
     if args.max:
         max_courses = args.max // len(in_files)
 
-    for in_file in in_files:
-        topics += load_topics(in_file.strip(), max_courses)
-
-    # Everything is cached, so exact duplicates will result in the same output
-    topics = exact_deduplicate(topics)
-
     total_processes = math.ceil(args.workers * settings.RAY_CORES_PER_WORKER)
-    func = process_course
-
-    if settings.THREADS_PER_WORKER > 1:
-        # group topics into batches of settings.THREADS_PER_WORKER
-        topics = [topics[i:i + settings.THREADS_PER_WORKER] for i in
-                          range(0, len(topics), settings.THREADS_PER_WORKER)]
-        total_processes = math.ceil(total_processes / settings.THREADS_PER_WORKER)
-        func = process_courses
 
     ray.init(
         num_cpus=total_processes,
@@ -229,23 +242,11 @@ if __name__ == "__main__":
     model = SentenceTransformer("TaylorAI/gte-tiny")
     model_ref = ray.put(model)
 
-    print(f"Generating {len(topics)} course batches with {total_processes} processes from filename(s) {in_files}")
-    futures = [func.remote(model_ref, batch, args) for batch in topics]
-
-    # Run all ray tasks
     courses = []
-    progress_bar = tqdm(total=len(futures))
-    while len(futures) > 0:
-        finished, futures = ray.wait(
-            futures, timeout=7.0
-        )
-        course = ray.get(finished)
-        courses.extend(course)
-        progress_bar.update(len(course))
-
-    if settings.THREADS_PER_WORKER > 1:
-        # Flatten courses list
-        courses = [course for batch in courses for course in batch]
+    print(f"Generating course batches with {total_processes} processes from filename(s) {in_files}")
+    for topics in load_data_in_blocks(in_files, settings.PROCESS_CHUNK_SIZE, max_courses=max_courses):
+        # Run ray tasks on split chunk
+        courses.extend(process_single_chunk(model_ref, topics, args))
 
     course_count = 0
     with open(os.path.join(settings.DATA_DIR, args.out_file), "w+") as f:
