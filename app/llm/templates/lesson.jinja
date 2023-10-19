@@ -1,16 +1,16 @@
 {% extends "template.jinja" %}
 
 {%block content %}
-Think step by step to continue writing this detailed textbook on {{topic}}. You will write the next {{sections_to_author}} {{section_str}} of the outline.
+The textbook is about {{topic}}.
 
-Each section is made up of content blocks. Include the following blocks:
+Each section of the textbook is made up of content blocks. Include the following blocks:
 {{component_extras|join('\n')}}
 
- Write concisely, remove unnecessary transitions, and get straight to the point. Make the language informal and friendly. For example, instead of saying "However, you will need to be prepared.", say "You'll need to prepare."
-
 {%if research_notes %}
-You've written research notes for the textbook that may be useful reference materials.  They're surrounded with ``` to separate them from the rest of the textbook. Do not include a research notes section in the final textbook.
+You've written research notes for the textbook that you should reference for factual details and information.  They're surrounded with ``` to separate them from the rest of the textbook. Do not include a research notes section in the final textbook.  Include all relevant information from the research notes in the textbook.
 {%endif%}
 
-Write the textbook in markdown, with blocks separated by --- like the examples below. Write the next {{sections_to_author}} {{section_str}} of the outline. Start from the section shown below.  Do not start sections by describing what the student will learn.  Do not say "In this section, we will, ...", or "In this textbook, we will". Simply write the learning material without any summaries or introductions.
+Do not start sections by describing what the student will learn.  Do not say "In this section, we will, ...", or "In this textbook, we will". Simply write the learning material without any summaries or introductions.  Write concisely, remove unnecessary transitions, and get straight to the point.  Do not repeat content from previous sections. Make sure the textbook is extremely long and detailed.
+
+Write the textbook in markdown, with blocks separated by --- like the examples below. Write the next {{sections_to_author}} {{section_str}} of the outline. Start from the section shown below.
 {% endblock %}

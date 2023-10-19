@@ -18,7 +18,7 @@ from app.util import extract_only_json_dict
 
 outline_settings = GenerationSettings(
     temperature=0.6,
-    max_tokens=2048,
+    max_tokens=1536,
     timeout=1200,
     prompt_type="outline",
     model=settings.LLM_INSTRUCT_TYPE,
@@ -32,17 +32,24 @@ class GeneratedOutlineData(BaseModel):
     queries: List[str] | None = None
 
 
-def outline_prompt(topic: str, concepts: List[str], item_count: int = settings.SECTIONS_PER_LESSON, include_examples=True) -> str:
+def outline_prompt(topic: str, potential_outline_items: List[str], item_count: int = settings.SECTIONS_PER_LESSON, include_examples=True) -> str:
     with open(os.path.join(settings.EXAMPLE_JSON_DIR, "outline.json")) as f:
         examples = json.load(f)
-    input = OrderedDict([("topic", topic), ("concepts", concepts)])
+
+    input = OrderedDict([("topic", topic)])
+    has_potential_outline = potential_outline_items and len(potential_outline_items) > 0
+    if has_potential_outline:
+        input["potential items"] = potential_outline_items
+        for example in examples:
+            del example["potential items"]
+
     prompt = build_prompt(
         "outline",
         input,
         examples,
         topic=topic,
-        concepts=concepts,
         item_count=item_count,
+        potential_outline_items=potential_outline_items,
         include_examples=include_examples,
     )
     if settings.FINETUNED:
@@ -77,14 +84,13 @@ def after_retry_callback(retry_state):
 )
 async def generate_outline(
     topic: str,
-    concepts: List[str],
+    potential_outline_items: List[str],
     revision: int,
     item_count: int = 10,
     include_examples: bool = True
 ) -> GeneratedOutlineData:
     # Sort concepts alphabetically so that the prompt is the same every time
-    concepts = sorted(concepts)
-    prompt = outline_prompt(topic, concepts, item_count=item_count, include_examples=include_examples)
+    prompt = outline_prompt(topic, potential_outline_items, item_count=item_count, include_examples=include_examples)
     text = ""
     if settings.FINETUNED:
         text = prompt_start_hint

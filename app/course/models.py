@@ -18,6 +18,7 @@ class Course(BaseDBModel, table=True):
     topic: str
     outline: List[str] = Field(sa_column=Column(JSON), default=list())
     concepts: List[str] = Field(sa_column=Column(JSON), default=list())
+    potential_outline_items: List[str] = Field(sa_column=Column(JSON), default=list())
     markdown: str = Field(sa_column=Column(JSON), default=list())
     components: List[AllLessonComponentData] = Field(
         sa_column=Column(JSON), default=list()

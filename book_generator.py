@@ -14,6 +14,7 @@ from app.course.models import load_cached_course, Course
 from app.lesson.tasks import generate_lesson
 from app.lesson.output import render_components_to_output_markdown
 from app.llm.generators.outline import renumber_outline
+from app.llm.generators.rewrite import extract_titles_only
 from app.settings import settings
 import json
 import os
@@ -49,6 +50,7 @@ def get_json_data_from_course(course: Course, extended_fields=False):
         else:
             json_data["context"] = [v.json() for v in course.context]
         json_data["queries"] = course.queries
+        json_data["potential_outline"] = course.potential_outline_items
     return json.dumps(json_data)
 
 
@@ -59,6 +61,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
     queries = None
     documents = None
     concepts = []
+    potential_outline_items = []
     if isinstance(course_data, dict):
         course_name = course_data["topic"]
         outline = course_data.get("outline")
@@ -76,12 +79,16 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
         return None
 
     if not outline:
-        # Only generate outline if one was not passed in
-        concepts = await create_course_concepts(course_name, revision)
-        if concepts is None:
-            return
+        if documents:
+            for doc in documents:
+                try:
+                    titles, positions = extract_titles_only(doc)
+                    potential_outline_items.extend(titles)
+                except ValueError:
+                    # This happens when titles can't be extracted from the doc
+                    pass
 
-        outline, queries = await create_course_outline(course_name, concepts, outline_items, revision)
+        outline, queries = await create_course_outline(course_name, potential_outline_items, outline_items, revision)
 
         if outline is None:
             return
@@ -115,6 +122,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
         topic=course_name,
         model=settings.LLM_TYPE,
         outline=outline,
+        potential_outline_items=potential_outline_items,
         concepts=concepts,
         markdown=md,
         components=components,
@@ -184,6 +192,7 @@ def load_data_in_blocks(data_files: List[str], block_size: int, max_courses: int
                     print(f"Malformed json line in file")
 
                 if max_courses and lines_processed >= max_courses:
+                    yield block
                     break
 
                 if len(block) >= block_size:

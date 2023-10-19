@@ -31,12 +31,12 @@ async def create_course_concepts(course_name: str, revision: int):
 
 
 async def create_course_outline(
-    course_name: str, concepts: List[str], outline_items: int, revision: int
+    course_name: str, potential_outline_items: List[str], outline_items: int, revision: int
 ):
     outline_list = None
     queries = None
     try:
-        outline_data = await generate_outline(course_name, concepts, revision, item_count=outline_items, include_examples=settings.INCLUDE_EXAMPLES)
+        outline_data = await generate_outline(course_name, potential_outline_items, revision, item_count=outline_items, include_examples=settings.INCLUDE_EXAMPLES)
         outline_list = outline_data.outline
         queries = outline_data.queries
     except (GenerationError, RateLimitError, InvalidRequestError, RetryError) as e:

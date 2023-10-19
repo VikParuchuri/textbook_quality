@@ -1,11 +1,14 @@
 [
   {
     "topic": "introduction to python programming",
-    "concepts": [
+    "potential items": [
       "Data structures",
       "Assignment and comparison",
       "Functions",
-      "Control flow"
+      "Control flow",
+      "Object-oriented programming",
+      "Boolean logic",
+      "Virtual environments"
     ],
     "json": {
       "outline": [
@@ -89,92 +92,6 @@
       "queries": [
         "Python programming beginner guide",
         "Python programming introduction book"
-      ]
-    }
-  },
-  {
-    "topic": "american history",
-    "concepts": [
-      "Colonial America",
-      "Civil War",
-      "Revolutionary War",
-      "Modern Era"
-    ],
-    "json": {
-      "outline": [
-          "1. Introduction to American History",
-          "1.1. Defining 'America': Geography and Pre-Colonial History",
-          "1.2. The Importance of Studying History",
-          "1.3. Historical Methodology and Sources",
-          "1.4. Timeline Overview of American History",
-          "2. Native American Civilizations",
-          "2.1. Pre-Columbian Civilizations",
-          "2.2. The Impact of European Exploration",
-          "2.3. Native American Resistance and Adaptation",
-          "3. Exploration and Colonization",
-          "3.1. The Age of Exploration",
-          "3.2. Early English Colonies",
-          "3.3. French and Spanish Presence in North America",
-          "3.4. Colonial Society and Culture",
-          "4. Road to Independence",
-          "4.1. British Colonial Policies",
-          "4.2. The American Revolution",
-          "4.3. The Declaration of Independence",
-          "4.4. The Revolutionary War",
-          "5. A New Nation",
-          "5.1. Articles of Confederation",
-          "5.2. The U.S. Constitution",
-          "5.3. Federalists vs. Anti-Federalists",
-          "5.4. The Bill of Rights",
-          "6. The Early Republic",
-          "6.1. The Presidency of George Washington",
-          "6.2. Adams, Jefferson, and the Age of Federalism",
-          "6.3. Expansion and Manifest Destiny",
-          "6.4. The War of 1812",
-          "7. Antebellum Period",
-          "7.1. The Industrial Revolution in America",
-          "7.2. Social Reforms and Movements",
-          "7.3. The Issue of Slavery",
-          "7.4. Prelude to Civil War: Compromises and Conflicts",
-          "8. The Civil War and Reconstruction",
-          "8.1. Causes of the Civil War",
-          "8.2. Major Battles and Strategies",
-          "8.3. The Emancipation Proclamation and African Americans in the War",
-          "8.4. Reconstruction and its Challenges",
-          "9. Gilded Age to Progressive Era",
-          "9.1. Industrialization and Urbanization",
-          "9.2. Immigration and the Melting Pot",
-          "9.3. Populism and Progressivism",
-          "9.4. The Spanish-American War",
-          "10. The Roaring Twenties and Great Depression",
-          "10.1. Post-WWI America",
-          "10.2. The Jazz Age and Cultural Changes",
-          "10.3. The Stock Market Crash and the Great Depression",
-          "10.4. The New Deal",
-          "11. World War II and Cold War Era",
-          "11.1. America's Entry into WWII",
-          "11.2. The Homefront and War Economy",
-          "11.3. The Beginning of the Cold War",
-          "11.4. Korean War and Vietnam War",
-          "12. Modern America",
-          "12.1. Civil Rights Movement",
-          "12.2. The 1970s: Watergate and Energy Crises",
-          "12.3. The 1980s: Reaganomics and the End of the Cold War",
-          "12.4. The 1990s to Early 2000s: Technology Boom and Globalization",
-          "13. Contemporary America",
-          "13.1. The War on Terror",
-          "13.2. The 2008 Economic Recession",
-          "13.3. Social and Cultural Shifts",
-          "13.4. Political Polarization and Modern Challenges",
-          "14. Conclusion: America in the Global Age",
-          "14.1. The Role of the U.S. in Global Politics",
-          "14.2. Economic Trends and Challenges",
-          "14.3. Technological Innovations and Implications",
-          "14.4. Looking Forward: Predictions and Possibilities"
-      ],
-      "queries": [
-        "American history book",
-        "American civil war history"
       ]
     }
   }

@@ -104,9 +104,14 @@ async def generate_lesson(
         components = deepcopy(components + new_components)
 
         all_section_headers = [
-                i for i, c in enumerate(components) if c.type == ComponentNames.section
+                (i, c) for i, c in enumerate(components) if c.type == ComponentNames.section
             ]
-        last_section_index = all_section_headers[-1]
+        last_section_index = all_section_headers[-1][0]
+
+        # sometimes, we will generate sections inside a text block.  This renumbers to match.
+        last_section_header_md = all_section_headers[-1][1].markdown.strip()
+        if last_section_header_md in numbered_outline:
+            last_section_index = numbered_outline.index(last_section_header_md)
 
         # Handle partially generated (cut-off) sections
         # Only do this if there are few components, and it's not the end of the lesson
@@ -120,9 +125,9 @@ async def generate_lesson(
             use_cache = True
 
         iterations += 1
-        generated_sections = len(
+        generated_sections = max(len(
             [c for c in components if c.type == ComponentNames.section]
-        )
+        ), last_section_index + 1)
     return components
 
 
@@ -170,4 +175,47 @@ async def generate_single_lesson_chunk(
         # Remove the final section header from the chunk
         new_components = new_components[:-1]
 
+    # Sometimes, sections will generate inside text blocks.  Remove these.
+    new_components = strip_components_inside_text(
+        new_components,
+        stop_section,
+        numbered_outline[current_section_index:(current_section_index + 5)]
+    )
+
     return new_components
+
+
+def regex_check_split(markdown, outline_item):
+    num, ending = outline_item.split(" ", 1)
+    if num.endswith("."):
+        alt_num = num[:-1]
+    else:
+        alt_num = f"{num}."
+
+    patterns = [
+        f"\n{num} {ending}",
+        f"\n{alt_num} {ending}",
+    ]
+
+    for pattern in patterns:
+        if pattern in markdown:
+            return markdown.rsplit(pattern, 1)[0]
+    return markdown
+
+
+def strip_components_inside_text(components, stop_section, numbered_outline):
+    sections_seen = 0
+    for component in components[::-1]:
+        if component.type == ComponentNames.section:
+            sections_seen += 1
+        if sections_seen > 1:
+            break
+
+        if component.type in [ComponentNames.text, ComponentNames.example]:
+            component_md = component.markdown
+            if stop_section:
+                component_md = regex_check_split(component_md, stop_section)
+            for item in numbered_outline:
+                component_md = regex_check_split(component_md, item)
+            component.markdown = component_md
+    return components

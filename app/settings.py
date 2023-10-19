@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     # Content
     SECTIONS_PER_LESSON: int = 30  # Lower this to make books shorter
-    SECTIONS_PER_GENERATION: int = 5 # How many sections to generate in one prompt
+    SECTIONS_PER_GENERATION: int = 2 # How many sections to generate in one prompt
     MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
     FINETUNED: bool = False # If we're using a finetuned textbook gen model
     INCLUDE_EXAMPLES: bool = (
@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     RAY_CACHE_PATH: Optional[str] = None # Where to save ray cache
     RAY_DASHBOARD_HOST: str = "127.0.0.1"
     RAY_CORES_PER_WORKER = 1 # How many cpu cores to allocate per worker
-    PROCESS_CHUNK_SIZE = 2000 # How many rows to process in a single chunk
+    PROCESS_CHUNK_SIZE = 3000 # How many rows to process in a single chunk
 
     class Config:
         env_file = find_dotenv("local.env")

@@ -16,7 +16,7 @@ def create_embeddings(passages, model) -> torch.Tensor:
 
 
 def run_query(
-    query_text: str | List[str], embeddings, model, result_count=1, score_thresh=0.6
+    query_text: str | List[str], embeddings, model, result_count=3, score_thresh=0.6
 ):
     query_embedding = model.encode(query_text, convert_to_tensor=True)
 
@@ -25,13 +25,16 @@ def run_query(
 
     # Indices of the passages most similar to the queries (outline items)
     flat_indices = torch.flatten(top_results.indices[top_results.values > score_thresh])
-    selected_row = torch.sum(top_results.values > score_thresh, dim=-1) > 0
     selected_indices = set(flat_indices.tolist())
 
     # Create a mapping, so we know which passages are used by which outline items
     if isinstance(query_text, list):
-        outline_items_selected = torch.arange(len(query_text))[selected_row].tolist()
-        item_mapping = {o: i.item() for o, i in zip(outline_items_selected, flat_indices)}
+        item_mapping = {}
+        for i in range(0, len(query_text)):
+            sel_indices = top_results.indices[i, :]
+            sel_indices = sel_indices[top_results.values[i, :] > score_thresh]
+            sel_indices = sel_indices.tolist()
+            item_mapping[i] = sel_indices
     else:
         item_mapping = None
     return top_results, selected_indices, item_mapping
@@ -95,7 +98,6 @@ class EmbeddingContext:
         self.embeddings = None
         self.content = []
         self.lengths = []
-        self.text_data = []
         self.model = model
         self.kinds = []
 
@@ -117,8 +119,6 @@ class EmbeddingContext:
             else:
                 self.embeddings = torch.cat((self.embeddings, embeddings), dim=0)
 
-            self.text_data.append(resource)
-
     def query(self, query_text, result_count=1, score_thresh=0.6) -> List[ResearchNote]:
         scores, selected_indices, item_mapping = run_query(
             query_text, self.embeddings, self.model, result_count, score_thresh=score_thresh
@@ -128,10 +128,9 @@ class EmbeddingContext:
         for index in selected_indices:
             for i, length in enumerate(self.lengths):
                 if index < length:
-                    text_data = self.text_data[i]
                     result = ResearchNote(
                         content=self.content[index],
-                        outline_items=[k for k in item_mapping.keys() if item_mapping[k] == index],
+                        outline_items=[k for k in item_mapping.keys() if index in item_mapping[k]],
                         kind=self.kinds[i]
                     )
                     results.append(result)
