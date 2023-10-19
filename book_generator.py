@@ -54,7 +54,7 @@ def get_json_data_from_course(course: Course, extended_fields=False):
     return json.dumps(json_data)
 
 
-async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=12, cache_only=False):
+async def generate_single_course(model, course_data: Dict | str, revision=1, outline_items=settings.TOTAL_OUTLINE_ITEMS, cache_only=False):
     components = ["exercise", "example"]
 
     outline = None
@@ -82,7 +82,7 @@ async def generate_single_course(model, course_data: Dict | str, revision=1, out
         if documents:
             for doc in documents:
                 try:
-                    titles, positions = extract_titles_only(doc)
+                    titles = extract_titles_only(doc)
                     potential_outline_items.extend(titles)
                 except ValueError:
                     # This happens when titles can't be extracted from the doc

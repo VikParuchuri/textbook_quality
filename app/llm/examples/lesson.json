@@ -1,6 +1,6 @@
 [
   {
-    "Table of contents\n": "1. Python Dictionaries\n1.1 Keys, Values, and Membership in Python Dictionaries",
+    "Table of contents\n": "1. Python Dictionaries\n2. Keys, Values, and Membership in Python Dictionaries",
     "research notes\n": "* ```\nThe dictionary is a commonly used data structure that is a collection of items.\n○ Each item consists of key-value pairs\n○ It is ordered collection of references - Each value is\nreferenced though key in the pair\n```\n* ```\nin tests for the existence of a key in a dictionary:\n\nd = {'key1': 10, 'key2': 23}\n\nif 'key1' in d:\n    print('this will execute')\n```\n* ```\ndictionaries are indexed by keys, which can be any immutable type; strings and numbers can always be keys. Tuples can be used as keys if they contain only strings, numbers, or tuples; if a tuple contains any mutable object either directly or indirectly, it cannot be used as a key. You can’t use lists as keys, since lists can be modified in place using index assignments, slice assignments, or methods like append() and extend().\n\nIt is best to think of a dictionary as a set of key: value pairs, with the requirement that the keys are unique (within one dictionary). A pair of braces creates an empty dictionary: {}. Placing a comma-separated list of key:value pairs within the braces adds initial key:value pairs to the dictionary; this is also the way dictionaries are written on output.\n```",
     "course\n\n": "---section\n\n1.1 Keys, Values, and Membership in Python Dictionaries",
     "markdown": [

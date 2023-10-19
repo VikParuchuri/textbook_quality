@@ -145,8 +145,8 @@ def extract_titles_only(text: str):
     titles = extract_toc_titles(text)
     if len(titles) < 10:
         try:
-            titles = extract_all_titles(text)
-            titles = [t[0].strip() for t in titles]
+            titles, positions = extract_titles_and_positions(text)
+            titles = [t.strip() for t in titles]
         except ValueError:
             pass
     new_titles = []
@@ -154,13 +154,12 @@ def extract_titles_only(text: str):
         title = title_case(title.strip())
         if title not in new_titles:
             new_titles.append(title)
-    return new_titles
+    return new_titles[:60]
 
 
 def extract_titles_and_positions(text: str) -> (List[str], List[int]):
     lines = text.split("\n")
     potential_titles = extract_all_titles(text)
-
 
     # Count the number of times each potential title appears, and find first appearance
     min_position = {}
@@ -171,8 +170,8 @@ def extract_titles_and_positions(text: str) -> (List[str], List[int]):
             min_position[potential_title[0]] = potential_title[1]
 
     # Extract the most seen potential titles
-    total_titles = min(20, max(10, len(lines) // 250))
-    titles = sorted([(k, v) for k, v in counter.items() if v > 1], key=lambda x: x[1], reverse=True)[:total_titles]
+    total_titles = min(30, max(15, len(lines) // 200))
+    titles = sorted([(k, v) for k, v in counter.items()], key=lambda x: x[1], reverse=True)[:total_titles]
     positions = [min_position[t[0]] for t in titles]
     titles = [title_case(t[0]).strip() for t in titles]
 

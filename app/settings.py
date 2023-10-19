@@ -19,6 +19,8 @@ class Settings(BaseSettings):
 
     # Content
     SECTIONS_PER_LESSON: int = 30  # Lower this to make books shorter
+    TOTAL_OUTLINE_ITEMS: int = 40  # How many chapters to include in outline
+    SUBSECTIONS_PER_ITEM: int = 3  # subsections per chapter
     SECTIONS_PER_GENERATION: int = 2 # How many sections to generate in one prompt
     MAX_DOWNLOAD_SIZE: int = 6 * 1024 * 1024  # Max pdf size to download, 6 MB
     FINETUNED: bool = False # If we're using a finetuned textbook gen model

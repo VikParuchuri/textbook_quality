@@ -19,7 +19,7 @@ lesson_settings = GenerationSettings(
 
 COMPONENT_EXTRAS = {
     "exercise": "* ---exercise specifies an exercise. Exercises enable learners to practice the skills learned in the text. They should be challenging and require understanding the text fully. Exercises should contain instructions and the correct answer.",
-    "text": "* ---text specifies a text block. Text blocks are the main content of the course. Text should be in Github-flavored markdown. Inline math equations should be surrounded with $ symbols, and block math should be surrounded with $$.  Code blocks should be surrounded with ```.  Text should be thorough and detailed.",
+    "text": "* ---text specifies a text block. Text blocks are the main content of the course. Text should be in Github-flavored markdown. Inline math equations should be surrounded with $ symbols, and block math should be surrounded with $$.  Code blocks should be surrounded with ```.",
     "section": "* ---section specifies a section header. Each section matches an item in the outline.",
     "example": "* ---example specifies an example. Examples are used to illustrate concepts found in the text in a practical way.",
 }

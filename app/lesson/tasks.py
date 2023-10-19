@@ -108,11 +108,6 @@ async def generate_lesson(
             ]
         last_section_index = all_section_headers[-1][0]
 
-        # sometimes, we will generate sections inside a text block.  This renumbers to match.
-        last_section_header_md = all_section_headers[-1][1].markdown.strip()
-        if last_section_header_md in numbered_outline:
-            last_section_index = numbered_outline.index(last_section_header_md)
-
         # Handle partially generated (cut-off) sections
         # Only do this if there are few components, and it's not the end of the lesson
         if len(components) - last_section_index <= 2 and \
@@ -125,9 +120,15 @@ async def generate_lesson(
             use_cache = True
 
         iterations += 1
-        generated_sections = max(len(
+        generated_sections = len(
             [c for c in components if c.type == ComponentNames.section]
-        ), last_section_index + 1)
+        )
+
+        # sometimes, we will generate sections inside a text block. This ensures we're pointing at the right outline item.
+        last_section_header_md = all_section_headers[-1][1].markdown.strip()
+        if last_section_header_md in numbered_outline:
+            generated_sections = numbered_outline.index(last_section_header_md) + 1
+
     return components
 
 

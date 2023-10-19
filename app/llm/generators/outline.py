@@ -18,10 +18,10 @@ from app.util import extract_only_json_dict
 
 outline_settings = GenerationSettings(
     temperature=0.6,
-    max_tokens=1536,
+    max_tokens=2048,
     timeout=1200,
     prompt_type="outline",
-    model=settings.LLM_INSTRUCT_TYPE,
+    model=settings.LLM_TYPE,
 )
 
 # This can get better results from a finetuned model, forces a certain outline format
@@ -49,6 +49,7 @@ def outline_prompt(topic: str, potential_outline_items: List[str], item_count: i
         examples,
         topic=topic,
         item_count=item_count,
+        subsections_per_item=settings.SUBSECTIONS_PER_ITEM,
         potential_outline_items=potential_outline_items,
         include_examples=include_examples,
     )
